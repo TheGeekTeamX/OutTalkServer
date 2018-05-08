@@ -1,0 +1,22 @@
+<hibernate-configuration>
+    <session-factory>
+        <!-- Database connection settings -->
+        <property name="connection.driver_class">com.microsoft.sqlserver.jdbc.SQLServerDriver</property>
+        <property name="connection.url">jdbc:sqlserver://localhost:1433;database=OutTalk;integratedSecurity=true;</property>
+        <!-- JDBC connection pool (use the built-in) -->
+        <property name="connection.pool_size">1</property>
+        <!-- SQL dialect -->
+        <property name="dialect">org.hibernate.dialect.SQLServer2012Dialect</property>
+        <!-- Echo all executed SQL to stdout -->
+        <property name="show_sql">false</property>
+        <mapping class="DB.User"></mapping>
+        <mapping class="DB.UserEvent"></mapping>
+        <mapping class="DB.Event"></mapping>
+        <mapping class="DB.Contact"></mapping>
+        <mapping class="DB.Credential"></mapping>
+		<mapping class="DB.Protocol"></mapping>        
+		<mapping class="DB.ProfilePicture"></mapping>        
+
+    </session-factory>
+</hibernate-configuration>
+ 
