@@ -18,7 +18,7 @@ public class Event implements IDBEntity{
 	private int id;
     @OneToOne(targetEntity = User.class)
     @JoinColumn(name = "AdminId")
-    private User adminId;
+    private User admin;
 	@Column(name = "Title")
 	private String title;
 	@Column(name = "DateCreated")
@@ -33,10 +33,10 @@ public class Event implements IDBEntity{
 		super();
 		// TODO Auto-generated constructor stub
 	}
-	public Event(User adminId,String title, Date dateCreated, int isFinished, int isConverted) {
+	public Event(User admin,String title, Date dateCreated, int isFinished, int isConverted) {
 		super();
 		this.title = title;
-		this.adminId = adminId;
+		this.admin = admin;
 		this.dateCreated = dateCreated;
 		this.isFinished = isFinished;
 		this.isConverted = isConverted;
@@ -54,11 +54,11 @@ public class Event implements IDBEntity{
 	public void setId(int id) {
 		this.id = id;
 	}
-	public User getAdminId() {
-		return adminId;
+	public User getAdmin() {
+		return admin;
 	}
-	public void setAdminId(User adminId) {
-		this.adminId = adminId;
+	public void setAdmin(User admin) {
+		this.admin = admin;
 	}
 	public Date getDateCreated() {
 		return dateCreated;
@@ -81,14 +81,14 @@ public class Event implements IDBEntity{
 	@Override
 	public String toString()
 	{
-		return "Event [id="+id+",adminId="+adminId+",dateCreated="+dateCreated+",isFinished="+isFinished+",isConverted="+isConverted+"]";
+		return "Event [id="+id+",admin="+admin+",dateCreated="+dateCreated+",isFinished="+isFinished+",isConverted="+isConverted+"]";
 	}
 	@Override
 	public void update(IDBEntity other) {
 		// TODO Auto-generated method stub
 		if(other.getClass() == this.getClass())
 		{
-			this.adminId = ((Event)other).adminId;
+			this.admin = ((Event)other).admin;
 			this.dateCreated = ((Event)other).dateCreated;
 			this.isFinished = ((Event)other).isFinished;
 			this.isConverted = ((Event)other).isConverted;

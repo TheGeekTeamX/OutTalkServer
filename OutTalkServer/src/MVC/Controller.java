@@ -17,6 +17,7 @@ import com.corundumstudio.socketio.listener.DisconnectListener;
 import ClientHandler.*;
 import DB.*;
 import Enums.*;
+import Notifications.EventCloseNotificationData;
 import Notifications.EventInvitationNotificationData;
 import Requests.*;
 import Responses.*;
@@ -120,7 +121,7 @@ public class Controller implements Observer,IController {
 									connections.put(user.getEmail(), client);
 								}
 								else
-									ClientHandler.sendToClient(client, "Response", new BooleanResponseData(false));
+									ClientHandler.sendToClient(client, "Response", new ErrorResponseData(ErrorType.IncorrectCredentials));
 								return;
 							}
 						}				
@@ -166,6 +167,21 @@ public class Controller implements Observer,IController {
 	}
 	
 
+	private void inviteParticipants(Event event)
+	{
+		ArrayList<User> participants = model.getDbManager().getPariticpants(event.getId());
+		ArrayList<UserData> list = new ArrayList<>();
+		participants.forEach(p->{
+			list.add(new UserData(p.getFirstName(),p.getLastName(),p.getEmail(),model.getDbManager().getUserProfilePicture(p.getId()).getProfilePictureUrl()));
+		});
+		participants.forEach(p -> {
+			SocketIOClient client = connections.get(p.getEmail());
+			if(client != null)
+			{
+				ClientHandler.sendToClient(client, "Notification", new EventInvitationNotificationData(event.getId(),list,event.getTitle()));
+			}
+		});
+	}
 	
 	private void notifyParticipants(Event event)
 	{
@@ -174,33 +190,39 @@ public class Controller implements Observer,IController {
 			SocketIOClient client = connections.get(p.getEmail());
 			if(client != null)
 			{
-				
+				ClientHandler.sendToClient(client, "Notification", new EventCloseNotificationData(event.getId()));
 			}
 		});
 	}
 	
 	private ResponseData CloseEvent(RequestData reqData)
 	{
+		view.printToConsole(reqData.getUserEmail()+" Send CloseEventRequest");
 		User user = getUserFromDB(reqData);
 		if(user == null)
 			return new ErrorResponseData(ErrorType.UserIsNotExist);
 		Event event = (Event) model.getDbManager().get(((CloseEventRequestData)reqData).getEventId(), DBEntityType.Event);
 		if(event == null)
 			return new ErrorResponseData(ErrorType.EventIsNotExist);
-		event.setIsFinished(1);
-		if(model.getDbManager().editInDataBase(event.getId(), DBEntityType.Event, event))
-			return new ErrorResponseData(ErrorType.TechnicalError);
-		else
+		if(event.getAdmin().getId() == user.getId())
 		{			
-			//notify to all pariticpants
-			//Get Byte array from req and send to GoogleService
-			notifyParticipants(event);
-			return new BooleanResponseData(true);
+			event.setIsFinished(1);
+			if(model.getDbManager().editInDataBase(event.getId(), DBEntityType.Event, event))
+				return new ErrorResponseData(ErrorType.TechnicalError);
+			else
+			{			
+				//Get Byte array from req and send to GoogleService
+				notifyParticipants(event);
+				return new BooleanResponseData(true);
+			}
 		}
+		else
+			return new ErrorResponseData(ErrorType.UserIsNotAdmin);
 	}
 	
 	private ResponseData EventProtocol(RequestData reqData)
 	{
+		view.printToConsole(reqData.getUserEmail()+" Send EventProtocolRequest");
 		User user = getUserFromDB(reqData);
 		if(user == null)
 			return new ErrorResponseData(ErrorType.UserIsNotExist);
@@ -211,6 +233,7 @@ public class Controller implements Observer,IController {
 	
 	private ResponseData PendingEvents(RequestData reqData)
 	{
+		view.printToConsole(reqData.getUserEmail()+" Send PendingEventsRequest");
 		User user = getUserFromDB(reqData);
 		if(user == null)
 			return new ErrorResponseData(ErrorType.UserIsNotExist);
@@ -222,6 +245,7 @@ public class Controller implements Observer,IController {
 	
 	private ResponseData CreateEvent(RequestData reqData)
 	{
+		view.printToConsole(reqData.getUserEmail()+" Send CreateEventRequest");
 		User user = getUserFromDB(reqData);
 		if(user == null)
 			return new ErrorResponseData(ErrorType.UserIsNotExist);
@@ -246,7 +270,7 @@ public class Controller implements Observer,IController {
 			model.getDbManager().addToDataBase(new UserEvent(p, e, 0));
 		});
 		
-		sendInvitesToUsers(e, ids);
+		inviteParticipants(e);
 		
 		return new BooleanResponseData(true);
 	}
@@ -268,7 +292,7 @@ public class Controller implements Observer,IController {
 		case EventsListRequest:
 			return EventsList(reqData);
 		case ContactsListRequest:
-			return ContactList(reqData);
+			return ContactList(reqData);//checked
 		case CloseEventRequest:
 			return CloseEvent(reqData);
 		case CreateEventRequest:
@@ -290,6 +314,7 @@ public class Controller implements Observer,IController {
 	
 	private ResponseData UpdateProfilePicture(RequestData reqData)
 	{
+		view.printToConsole(reqData.getUserEmail()+" Send UpdateProfilePictureRequest");
 		User user = getUserFromDB(reqData);
 		if(user == null)
 			return new ErrorResponseData(ErrorType.UserIsNotExist);
@@ -302,6 +327,7 @@ public class Controller implements Observer,IController {
 	
 	private ResponseData ProfilePicture(RequestData reqData)
 	{
+		view.printToConsole(reqData.getUserEmail()+" Send ProfilePictureRequest");
 		User user = getUserFromDB(reqData);
 		if(user == null)
 			return new ErrorResponseData(ErrorType.UserIsNotExist);
@@ -322,6 +348,7 @@ public class Controller implements Observer,IController {
 	
 	private ResponseData CreateUser(RequestData reqData)
 	{
+		view.printToConsole(reqData.getUserEmail()+" Send CreateUserRequest");
 		User user = getUserFromDB(reqData);
 		if(user != null)
 			return new ErrorResponseData(ErrorType.EmailAlreadyRegistered);
@@ -336,19 +363,26 @@ public class Controller implements Observer,IController {
 	
 	private ResponseData ContactList(RequestData reqData)
 	{
+		view.printToConsole(reqData.getUserEmail()+" Send ContactListRequest");
 		User user = getUserFromDB(reqData);
 		if(user == null)
 			return new ErrorResponseData(ErrorType.UserIsNotExist);
 		ArrayList <Contact> contactsList = model.getDbManager().getContactsList(user.getId());
 		LinkedList<UserData> list = new LinkedList<>();
 		contactsList.forEach(c -> {
-			//list.add(new UserData(c.getFriend().getFullName(), c.getFriend().getEmail(), "TODO"));
+			User u = (User) model.getDbManager().get(c.getFriend().getId(), DBEntityType.User);
+			if(u!=null)
+			{
+				list.add(new UserData(c.getFriend().getFirstName(),c.getFriend().getLastName(), c.getFriend().getEmail(), "TODO"));
+			}
+			
 		});
 		return new ContactsListResponseData(list);
 	}
 	
 	private ResponseData EditUser(RequestData reqData)
 	{
+		view.printToConsole(reqData.getUserEmail()+" Send EditUserRequest");
 		User user = getUserFromDB(reqData);
 		if(user == null)
 			return new ErrorResponseData(ErrorType.UserIsNotExist);
@@ -362,11 +396,12 @@ public class Controller implements Observer,IController {
 	
 	private ResponseData EditContactsList(RequestData reqData)
 	{
+		view.printToConsole(reqData.getUserEmail()+" Send EditContactsListRequest");
 		User user = model.getDbManager().getUser(reqData.getUserEmail());
 		if(user == null)
 			return new ErrorResponseData(ErrorType.UserIsNotExist);
 		ArrayList <Contact> currentContactsList = model.getDbManager().getContactsList(user.getId());
-		if (currentContactsList.size() == 0)
+		if (currentContactsList == null || currentContactsList.size() == 0)
 			return new BooleanResponseData(false);
 		LinkedList <String> newContactsList = ((EditContactsListRequestData)reqData).getUpdatedFriendsList();
 		if (newContactsList.size() == 0)
@@ -384,6 +419,7 @@ public class Controller implements Observer,IController {
 	
 	private ResponseData ChangePassword(RequestData reqData)
 	{
+		view.printToConsole(reqData.getUserEmail()+" Send ChangePasswordRequest");
 		String oldPass = ((ChangePasswordRequestData)reqData).getOldPassword();
 		String newPass = ((ChangePasswordRequestData)reqData).getNewPassword();
 		User user = getUserFromDB(reqData);
@@ -405,7 +441,7 @@ public class Controller implements Observer,IController {
 	
 	private ResponseData AddFriend(RequestData reqData)
 	{
-		view.printToConsole(reqData.getUserEmail()+" Send AddFriendRequesr");
+		view.printToConsole(reqData.getUserEmail()+" Send AddFriendRequest");
 		User user = getUserFromDB(reqData);
 		User friend = model.getDbManager().getUser(((AddFriendRequestData)reqData).getFriendMail());
 		
@@ -438,6 +474,7 @@ public class Controller implements Observer,IController {
 	}
 	private ResponseData EventsList(RequestData reqData)
 	{
+		view.printToConsole(reqData.getUserEmail()+" Send EcentListRequest");
 		User user = getUserFromDB(reqData);
 		if(user == null)
 			return new ErrorResponseData(ErrorType.UserIsNotExist);
@@ -450,26 +487,7 @@ public class Controller implements Observer,IController {
 
 	
 	
-	public void sendInvitesToUsers(Event event, ArrayList<Integer> users)
-	{
-		ArrayList<User> participants = new ArrayList<>();
-		ArrayList<String> participantsNames = new ArrayList<>();
-		users.forEach(u -> {
-			User user = (User) model.getDbManager().get(u, DBEntityType.User);
-			if(user != null)
-			{
-				participants.add(user);
-				participantsNames.add(user.getEmail());
-			}
-		});
-		participants.forEach(p -> {
-			SocketIOClient sock = connections.get(p.getEmail());
-			if(sock != null)
-			{
-				ClientHandler.sendToClient(sock, "Notification", new EventInvitationNotificationData(event.getId(),participantsNames,event.getTitle()));
-			}
-		});
-	}
+
 	
 	@Override	
 	public void update(Observable o, Object arg) {
