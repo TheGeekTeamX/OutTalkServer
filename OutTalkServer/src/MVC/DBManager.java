@@ -233,7 +233,7 @@ public class DBManager {
 	private void connectToDataBase()
 	{
 		Logger.getLogger("org.hibernate").setLevel(Level.SEVERE);
-		Configuration configuration = (new Configuration()).configure();
+		Configuration configuration = (new Configuration()).configure("hibernate.cfg.xml");
 		factory = configuration.buildSessionFactory(); 
 		lock = new ReentrantLock();
 	}
