@@ -1,12 +1,17 @@
 package MVC;
 
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.hibernate.*;
+
+import org.hibernate.HibernateException;
+import org.hibernate.Session;
+import org.hibernate.SessionFactory;
+import org.hibernate.Transaction;
 import org.hibernate.cfg.Configuration;
 
 import DB.*;
@@ -233,8 +238,7 @@ public class DBManager {
 	private void connectToDataBase()
 	{
 		Logger.getLogger("org.hibernate").setLevel(Level.SEVERE);
-		Configuration configuration = (new Configuration()).configure("hibernate.cfg.xml");
-		factory = configuration.buildSessionFactory(); 
+		factory = new Configuration().configure().buildSessionFactory();
 		lock = new ReentrantLock();
 	}
 
