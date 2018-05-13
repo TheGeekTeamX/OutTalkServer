@@ -17,7 +17,6 @@
 			<attribute name="maven.pomderived" value="true"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="lib" path="lib/sql/sqljdbc42.jar"/>
 	<classpathentry kind="lib" path="lib/SocketIO/jackson-annotations-2.7.0.jar"/>
 	<classpathentry kind="lib" path="lib/SocketIO/jackson-core-2.7.4.jar"/>
 	<classpathentry kind="lib" path="lib/SocketIO/jackson-databind-2.7.4.jar"/>
@@ -34,8 +33,12 @@
 	<classpathentry kind="lib" path="lib/Utils/gson-2.8.2.jar"/>
 	<classpathentry kind="lib" path="lib/Utils/httpclient-4.5.5.jar"/>
 	<classpathentry kind="lib" path="lib/Utils/commons-codec-1.11.jar"/>
+<<<<<<< HEAD
 	<classpathentry kind="lib" path="lib/Utils/Utils.jar"/>
 	<classpathentry exported="true" kind="con" path="org.eclipse.m2e.MAVEN2_CLASSPATH_CONTAINER">
+=======
+	<classpathentry kind="con" path="org.eclipse.m2e.MAVEN2_CLASSPATH_CONTAINER">
+>>>>>>> branch 'master' of https://github.com/TheGeekTeamX/OutTalkServer
 		<attributes>
 			<attribute name="maven.pomderived" value="true"/>
 		</attributes>

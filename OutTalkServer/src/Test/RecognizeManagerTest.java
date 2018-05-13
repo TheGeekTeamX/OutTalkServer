@@ -15,11 +15,11 @@ public class RecognizeManagerTest {
 		RecognizeManager rm = new RecognizeManager();
 		
 		//get the wav file 
-		WavSplitFixedTime ws = new WavSplitFixedTime("C:\\Users\\Gal\\Desktop\\wavTest\\fix.wav", 2);
+		WavSplitFixedTime ws = new WavSplitFixedTime("C:\\Users\\Gal\\Desktop\\wavTest\\fix.wav", 1);
 		List<String> wavBytesList = ws.getList();
 		
 		//get the users of the record from sisso
-		String users = "gal,eden,sahar,maayan,sisso,sapir";
+		String users = "gal,gal,gal,maayan,sisso,sapir";
 		List<String> usersList = new LinkedList<String>(Arrays.asList(users.split(",")));
 		
 		//algo
