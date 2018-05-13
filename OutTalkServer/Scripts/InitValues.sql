@@ -10,4 +10,4 @@ insert into Contacts (Userid,FriendId) values (1,2),(1,3),(2,1),(2,6),(3,4),(3,5
 
 insert into credentials (userid,credential) values (1,'A'),(2,'B'),(3,'C'),(4,'D'),(5,'E'),(6,'F')
 
-insert into profilepictures (userid,profilepictureurl) values (1,'image1'),(2,'image2'),(3,'image3'),(4,'image4'),(5,'image5'),(6,'image6')
+insert into profilepictures (userid,profilepictureurl) values (1,'1.jpg'),(2,'2.jpg'),(3,'3.jpg'),(4,'4.jpg'),(5,'5.jpg'),(6,'6.jpg')

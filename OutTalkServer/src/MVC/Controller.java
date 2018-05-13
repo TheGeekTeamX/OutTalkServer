@@ -1,5 +1,12 @@
 package MVC;
 
+import java.awt.image.BufferedImage;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
 import java.sql.Date;
 import java.util.ArrayList;
 import java.util.Calendar;
@@ -10,7 +17,10 @@ import java.util.Observer;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
+import javax.imageio.ImageIO;
+
 import com.corundumstudio.socketio.*;
+import com.corundumstudio.socketio.listener.ConnectListener;
 import com.corundumstudio.socketio.listener.DataListener;
 import com.corundumstudio.socketio.listener.DisconnectListener;
 
@@ -46,8 +56,7 @@ public class Controller implements Observer,IController {
 	public void start()
 	{		
 
-		startServer();
-		
+		startServer();	
 	}
 	
 	//C'tor
@@ -60,6 +69,7 @@ public class Controller implements Observer,IController {
 		this.model = model;
 		this.view = view;
 		executionPool = new PausableThreadPoolExecutor(10, 20, 2, TimeUnit.MINUTES, new ArrayBlockingQueue<>(5));
+
 	}
 	//Server Methods
 	public void initServerFunctionality(SocketIOServer serverSock)
@@ -153,8 +163,6 @@ public class Controller implements Observer,IController {
 		});
 	}
 	
-	
-	
 	private void startServer()
 	{
 		Configuration config = new Configuration();
@@ -166,7 +174,6 @@ public class Controller implements Observer,IController {
 		serverSock.start();		
 	}
 	
-
 	private void inviteParticipants(Event event)
 	{
 		ArrayList<User> participants = model.getDbManager().getPariticpants(event.getId());
@@ -178,7 +185,7 @@ public class Controller implements Observer,IController {
 			SocketIOClient client = connections.get(p.getEmail());
 			if(client != null)
 			{
-				ClientHandler.sendToClient(client, "Notification", new EventInvitationNotificationData(event.getId(),list,event.getTitle()));
+				NotificationHandler.sendNitification(client, new EventInvitationNotificationData(event.getId(),list,event.getTitle()));
 			}
 		});
 	}
@@ -190,7 +197,7 @@ public class Controller implements Observer,IController {
 			SocketIOClient client = connections.get(p.getEmail());
 			if(client != null)
 			{
-				ClientHandler.sendToClient(client, "Notification", new EventCloseNotificationData(event.getId()));
+				NotificationHandler.sendNitification(client, new EventCloseNotificationData(event.getId()));
 			}
 		});
 	}
@@ -305,11 +312,24 @@ public class Controller implements Observer,IController {
 			return ProfilePicture(reqData);
 		case UpdateProfilePictureRequest:
 			return UpdateProfilePicture(reqData);
+		case IsUserExistRequest:
+			
 		default:
 			System.out.println("default");
 			break;
 		}
 		return null;
+	}
+	private ResponseData IsUserExist(RequestData reqData)
+	{
+		view.printToConsole(reqData.getUserEmail()+" Send IsUserExistRequest");
+		User user = getUserFromDB(reqData);
+		if(user == null)
+			return new ErrorResponseData(ErrorType.UserIsNotExist);
+		User otherUser=model.getDbManager().getUser(((IsUserExistRequestData)reqData).getEmail());
+		if (otherUser == null)
+			return new ErrorResponseData(ErrorType.FriendIsNotExist);
+		return new IsUserExistResponseData(new UserData(otherUser.getFirstName(), otherUser.getLastName(), otherUser.getEmail(), model.getDbManager().getUserProfilePicture(otherUser.getId()).getProfilePictureUrl()));
 	}
 	
 	private ResponseData UpdateProfilePicture(RequestData reqData)
@@ -335,8 +355,17 @@ public class Controller implements Observer,IController {
 		if (pp == null)
 			return new ErrorResponseData(ErrorType.UserHasNoProfilePicture);
 		else
-			/*Attach Image To Response*/
-		return null;
+		{
+			try {				
+				File f = new File("resources/ProfilePictures/"+user.getId()+".jpg");
+				return new ProfilePictureResponseData(getBytesOfFile(f));
+			}
+			catch (Exception e){
+				e.printStackTrace();
+				return new ErrorResponseData(ErrorType.TechnicalError);
+			}
+			
+		}
 	}
 	
 	
@@ -353,7 +382,8 @@ public class Controller implements Observer,IController {
 		if(user != null)
 			return new ErrorResponseData(ErrorType.EmailAlreadyRegistered);
 		User u = new User(reqData.getUserEmail(), ((CreateUserRequestData)reqData).getFirstName(),((CreateUserRequestData)reqData).getLastName(), ((CreateUserRequestData)reqData).getPhoneNumber(),((CreateUserRequestData)reqData).getCountry());
-		if(model.getDbManager().addToDataBase(u) < 0)
+		u.setId(model.getDbManager().addToDataBase(u) );
+		if(u.getId() < 0)
 			return new ErrorResponseData(ErrorType.TechnicalError);
 		addProfilePicture(reqData);//TODO
 		model.getDbManager().addToDataBase(new Credential(u,((CreateUserRequestData)reqData).getCredential()));			
@@ -444,7 +474,6 @@ public class Controller implements Observer,IController {
 		view.printToConsole(reqData.getUserEmail()+" Send AddFriendRequest");
 		User user = getUserFromDB(reqData);
 		User friend = model.getDbManager().getUser(((AddFriendRequestData)reqData).getFriendMail());
-		
 		if(user == null)
 			return new ErrorResponseData(ErrorType.UserIsNotExist);
 		else if(friend == null)
@@ -493,6 +522,22 @@ public class Controller implements Observer,IController {
 	public void update(Observable o, Object arg) {
 		// TODO Auto-generated method stub
 		
+	}
+	
+	private byte[] getBytesOfFile(File f)
+	{
+		if(f != null)
+		{
+			long length = f.length();
+			try {
+				return Files.readAllBytes(f.toPath());
+			} catch (IOException e) {
+				// TODO Auto-generated catch block
+				e.printStackTrace();
+				return new byte[0];
+			}
+		}
+		return new byte[0];
 	}
 	
 	

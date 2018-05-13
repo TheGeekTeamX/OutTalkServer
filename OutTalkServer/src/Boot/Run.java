@@ -18,6 +18,7 @@ public class Run {
 		Model model = Model.getInstance();
 		Controller controller = new Controller(model,view,ip,port);
 		controller.start();
+		
 	}
 
 }
