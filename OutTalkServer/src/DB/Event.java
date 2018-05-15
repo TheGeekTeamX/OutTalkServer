@@ -27,22 +27,32 @@ public class Event implements IDBEntity{
 	private int isFinished;
 	@Column(name = "IsConverted")
 	private int isConverted;
+	@Column(name = "Description")
+	private String description;
 	
 	
 	public Event() {
 		super();
 		// TODO Auto-generated constructor stub
 	}
-	public Event(User admin,String title, Date dateCreated, int isFinished, int isConverted) {
+	public Event(User admin,String title, Date dateCreated, int isFinished, int isConverted, String description) {
 		super();
 		this.title = title;
 		this.admin = admin;
 		this.dateCreated = dateCreated;
 		this.isFinished = isFinished;
 		this.isConverted = isConverted;
+		this.description = description;
 	}
-	public 
-	int getId() {
+	
+	
+	public String getDescription() {
+		return description;
+	}
+	public void setDescription(String description) {
+		this.description = description;
+	}
+	public	int getId() {
 		return id;
 	}
 	public String getTitle() {
@@ -81,7 +91,7 @@ public class Event implements IDBEntity{
 	@Override
 	public String toString()
 	{
-		return "Event [id="+id+",admin="+admin+",dateCreated="+dateCreated+",isFinished="+isFinished+",isConverted="+isConverted+"]";
+		return "Event [id="+id+",admin="+admin+",dateCreated="+dateCreated+",isFinished="+isFinished+",isConverted="+isConverted+",description="+description+"]";
 	}
 	@Override
 	public void update(IDBEntity other) {
@@ -92,6 +102,7 @@ public class Event implements IDBEntity{
 			this.dateCreated = ((Event)other).dateCreated;
 			this.isFinished = ((Event)other).isFinished;
 			this.isConverted = ((Event)other).isConverted;
+			this.description = ((Event)other).description;
 		}
 		
 	}

@@ -2,6 +2,7 @@ package ClientHandler;
 
 import com.corundumstudio.socketio.SocketIOClient;
 import com.google.gson.Gson;
+
 import MVC.IController;
 import Requests.*;
 
@@ -23,7 +24,7 @@ public class ClientHandler  {
 	
 	public static void handleClient(SocketIOClient client, IController controller, String data) {
 
-		RequestData rd = gson.fromJson(data, RequestData.class);
+		RequestData rd = (RequestData) gson.fromJson(data, RequestData.class);
 		switch (rd.getType()) {
 		case AddFriendRequest:
 			sendToClient(client, "Response", controller.execute(getObjectFromString(data, AddFriendRequestData.class)));

@@ -4,6 +4,7 @@ package MVC;
 import java.io.File;
 import java.util.ArrayList;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.concurrent.locks.ReentrantLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -83,19 +84,29 @@ public class DBManager {
 	public LinkedList<EventData> getEventsList(int userId)
 	{
 		startSession();
+		
 		ArrayList<UserEvent> userEventList = (ArrayList<UserEvent>)session.createQuery(String.format("from UserEvents where UserId = " + userId)).list();
-		if(userEventList == null)
-			return null;
-		LinkedList<EventData> eventsList = new LinkedList<>();
+		ArrayList<UserData> usersDataList = new ArrayList<>();
 		userEventList.forEach(ue->{
-			ArrayList<UserEvent> participants = (ArrayList<UserEvent>)session.createQuery(String.format("from UserEvents where EventId = " + ue.getEvent().getId())).list();
-			LinkedList<String> participantsNames = new LinkedList<>();
-			participants.forEach(p -> {participantsNames.add(p.getUser().getEmail());});
-			eventsList.add(new EventData(ue.getId(), participantsNames, ue.getEvent().getDateCreated()));
-
+			usersDataList.add(getUserDataFromDBUserEntity(ue.getUser()));
 		});
+		ArrayList<EventData> events = new ArrayList<>();
+		userEventList.forEach(ue -> {
+			events.add(getEventDataByEvent(ue.getEvent(),usersDataList));
+		});
+
+//		if(userEventList == null)
+//			return null;
+//		LinkedList<EventData> eventsList = new LinkedList<>();
+//		userEventList.forEach(ue->{
+//			ArrayList<UserEvent> participants = (ArrayList<UserEvent>)session.createQuery(String.format("from UserEvents where EventId = " + ue.getEvent().getId())).list();
+//			LinkedList<String> participantsNames = new LinkedList<>();
+//			participants.forEach(p -> {participantsNames.add(p.getUser().getEmail());});
+//			eventsList.add(new EventData(ue.getId(), null, ue.getEvent().getDateCreated(),0,0,""));
+//
+//		});
 		closeSession();
-		return eventsList;
+		return null;
 	}
 	
 	public ArrayList<Contact> getContactsList(int userId)
@@ -254,13 +265,38 @@ public class DBManager {
 			{
 				LinkedList<String> participantsNames = new LinkedList<>();
 				ArrayList<UserEvent> participants = (ArrayList<UserEvent>)session.createQuery(String.format("from UserEvents where EventId = " + e.getId())).list();
+				ArrayList<UserData> udList = new ArrayList<>();
+				participants.forEach(p->{
+					udList.add(getUserDataFromDBUserEntity(p.getUser()));
+				});
 				participants.forEach(p -> {
 					participantsNames.add(p.getUser().getEmail());
 				});
-				eventsData.add(new EventData(e.getId(), participantsNames, e.getDateCreated()));
+				eventsData.add(getEventDataByEvent(pe.getEvent(), udList));
 				
 			}
 		});
 		return eventsData;
+	}
+	
+	public String getProfilePictureUrlByUserId(int userId)
+	{
+		return (this.getUserProfilePicture(userId)).getProfilePictureUrl();
+	}
+	
+	public EventData getEventDataByEvent(Event e, List<UserData> udlist)
+	{
+		return new EventData(e.getId(),
+				e.getTitle(),
+				e.getDateCreated(),
+				udlist,
+				"URL",
+				((User)get(e.getId(),DBEntityType.User)).getEmail(),
+				e.getDescription(),
+				e.getIsFinished()== 1 ? false :true) ;
+	}
+	public UserData getUserDataFromDBUserEntity(User user)
+	{
+		return new UserData(user.getFirstName(), user.getLastName(), user.getEmail(), getProfilePictureUrlByUserId(user.getId()), user.getPhoneNumber());
 	}
 }

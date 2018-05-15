@@ -14,7 +14,7 @@
 				</excludes>
 			</resource>
 			<resource>
-					<directory>resources</directory>
+				<directory>resources</directory>
 			</resource>
 		</resources>
 		<plugins>
@@ -46,9 +46,9 @@
 			<version>0.44.0-alpha</version>
 		</dependency>
 		<dependency>
-		    <groupId>org.hibernate</groupId>
-		    <artifactId>hibernate-core</artifactId>
-		    <version>5.3.0.CR2</version>
+			<groupId>org.hibernate</groupId>
+			<artifactId>hibernate-core</artifactId>
+			<version>5.3.0.CR2</version>
 		</dependency>
 		<dependency>
 			<groupId>org.hibernate.common</groupId>
@@ -59,6 +59,11 @@
 			<groupId>org.hibernate.javax.persistence</groupId>
 			<artifactId>hibernate-jpa-2.1-api</artifactId>
 			<version>1.0.0.Final</version>
+		</dependency>
+		<dependency>
+			<groupId>commons-codec</groupId>
+			<artifactId>commons-codec</artifactId>
+			<version>1.9</version>
 		</dependency>
 	</dependencies>
 </project>

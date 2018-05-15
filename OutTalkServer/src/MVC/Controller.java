@@ -124,9 +124,8 @@ public class Controller implements Observer,IController {
 								if(lrd.getUserEmail().equals(credential.getUser().getEmail()) && 
 										lrd.getPassword().equals(credential.getCredntial()))
 								{
-									ProfilePicture pp = model.getDbManager().getUserProfilePicture(user.getId());
 									ClientHandler.sendToClient(client, "Response", 
-											new LoginResponseData(user.getId(), user.getFirstName(), user.getLastName(), user.getPhoneNumber(), pp != null ? pp.getProfilePictureUrl() : ""));
+											new LoginResponseData(user.getId(), user.getFirstName(), user.getLastName(), user.getPhoneNumber(), model.getDbManager().getProfilePictureUrlByUserId(user.getId())));
 									view.printToConsole(credential.getUser().getEmail()+" Is Connected");
 									connections.put(user.getEmail(), client);
 								}
@@ -179,7 +178,7 @@ public class Controller implements Observer,IController {
 		ArrayList<User> participants = model.getDbManager().getPariticpants(event.getId());
 		ArrayList<UserData> list = new ArrayList<>();
 		participants.forEach(p->{
-			list.add(new UserData(p.getFirstName(),p.getLastName(),p.getEmail(),model.getDbManager().getUserProfilePicture(p.getId()).getProfilePictureUrl()));
+			list.add(model.getDbManager().getUserDataFromDBUserEntity(p));
 		});
 		participants.forEach(p -> {
 			SocketIOClient client = connections.get(p.getEmail());
@@ -256,18 +255,18 @@ public class Controller implements Observer,IController {
 		User user = getUserFromDB(reqData);
 		if(user == null)
 			return new ErrorResponseData(ErrorType.UserIsNotExist);
-		String[] participantsEmail = ((CreateEventRequestData)reqData).getUsersEmails().split(",");
+		ArrayList<String> participantsEmail = (ArrayList<String>) ((CreateEventRequestData)reqData).getUsersEmails();
 		int i=0;
 		LinkedList<User> participants = new LinkedList<>();
 		do {
-			User u = model.getDbManager().getUser(participantsEmail[i]);
+			User u = model.getDbManager().getUser(participantsEmail.get(i));
 			if(u!=null)
 				participants.add(u);
 			i++;
-		}while(i < participantsEmail.length);
+		}while(i < participantsEmail.size());
 		
 		//create Event
-		Event e = new Event(user,((CreateEventRequestData)reqData).getTitle(), new Date(Calendar.getInstance().getTime().getTime()), 0, 0);
+		Event e = new Event(user,((CreateEventRequestData)reqData).getTitle(), new Date(Calendar.getInstance().getTime().getTime()), 0, 0,((CreateEventRequestData)reqData).getDescription());
 		if (!(model.getDbManager().addToDataBase(e) > 0))
 			return new ErrorResponseData(ErrorType.TechnicalError);	
 		//create UserEvent
@@ -313,7 +312,7 @@ public class Controller implements Observer,IController {
 		case UpdateProfilePictureRequest:
 			return UpdateProfilePicture(reqData);
 		case IsUserExistRequest:
-			
+			return IsUserExist(reqData);
 		default:
 			System.out.println("default");
 			break;
@@ -329,7 +328,7 @@ public class Controller implements Observer,IController {
 		User otherUser=model.getDbManager().getUser(((IsUserExistRequestData)reqData).getEmail());
 		if (otherUser == null)
 			return new ErrorResponseData(ErrorType.FriendIsNotExist);
-		return new IsUserExistResponseData(new UserData(otherUser.getFirstName(), otherUser.getLastName(), otherUser.getEmail(), model.getDbManager().getUserProfilePicture(otherUser.getId()).getProfilePictureUrl()));
+		return new IsUserExistResponseData(model.getDbManager().getUserDataFromDBUserEntity(otherUser));
 	}
 	
 	private ResponseData UpdateProfilePicture(RequestData reqData)
@@ -403,7 +402,7 @@ public class Controller implements Observer,IController {
 			User u = (User) model.getDbManager().get(c.getFriend().getId(), DBEntityType.User);
 			if(u!=null)
 			{
-				list.add(new UserData(c.getFriend().getFirstName(),c.getFriend().getLastName(), c.getFriend().getEmail(), "TODO"));
+				list.add(model.getDbManager().getUserDataFromDBUserEntity(u));
 			}
 			
 		});
@@ -485,7 +484,7 @@ public class Controller implements Observer,IController {
 			if(model.getDbManager().getContact(user.getId(), friend.getId()) == null)
 			{
 				model.getDbManager().addToDataBase(new Contact(user, friend));
-				return new AddFriendResponseData(new UserData(friend.getFirstName(),friend.getLastName(), friend.getEmail(), "Image URL"));
+				return new AddFriendResponseData(model.getDbManager().getUserDataFromDBUserEntity(friend));
 			}
 			else
 				return new ErrorResponseData(ErrorType.AlreadyFriends);
@@ -540,5 +539,5 @@ public class Controller implements Observer,IController {
 		return new byte[0];
 	}
 	
-	
+
 }
