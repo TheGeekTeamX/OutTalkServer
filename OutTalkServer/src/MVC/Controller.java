@@ -436,9 +436,8 @@ public class Controller implements Observer,IController {
 		if (newContactsList.size() == 0)
 			return new BooleanResponseData(false);
 		currentContactsList.forEach(contact -> {
-			if(!newContactsList.contains(""+contact.getFriend().getId()))
+			if(!newContactsList.contains(""+contact.getFriend().getEmail()))
 			{				
-				System.out.println(contact.getId());
 				model.getDbManager().deleteFromDataBase(contact.getId(), DBEntityType.Contact);
 			}
 		});

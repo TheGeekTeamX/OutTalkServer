@@ -90,23 +90,13 @@ public class DBManager {
 		userEventList.forEach(ue->{
 			usersDataList.add(getUserDataFromDBUserEntity(ue.getUser()));
 		});
-		ArrayList<EventData> events = new ArrayList<>();
+		LinkedList<EventData> events = new LinkedList<>();
 		userEventList.forEach(ue -> {
 			events.add(getEventDataByEvent(ue.getEvent(),usersDataList));
 		});
 
-//		if(userEventList == null)
-//			return null;
-//		LinkedList<EventData> eventsList = new LinkedList<>();
-//		userEventList.forEach(ue->{
-//			ArrayList<UserEvent> participants = (ArrayList<UserEvent>)session.createQuery(String.format("from UserEvents where EventId = " + ue.getEvent().getId())).list();
-//			LinkedList<String> participantsNames = new LinkedList<>();
-//			participants.forEach(p -> {participantsNames.add(p.getUser().getEmail());});
-//			eventsList.add(new EventData(ue.getId(), null, ue.getEvent().getDateCreated(),0,0,""));
-//
-//		});
 		closeSession();
-		return null;
+		return events;
 	}
 	
 	public ArrayList<Contact> getContactsList(int userId)
