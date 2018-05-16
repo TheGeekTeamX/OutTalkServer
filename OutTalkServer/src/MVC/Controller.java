@@ -1,6 +1,7 @@
 package MVC;
 
 import java.awt.image.BufferedImage;
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -9,9 +10,11 @@ import java.io.InputStream;
 import java.nio.file.Files;
 import java.sql.Date;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.Calendar;
 import java.util.HashMap;
 import java.util.LinkedList;
+import java.util.List;
 import java.util.Observable;
 import java.util.Observer;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -173,33 +176,6 @@ public class Controller implements Observer,IController {
 		serverSock.start();		
 	}
 	
-	private void inviteParticipants(Event event)
-	{
-		ArrayList<User> participants = model.getDbManager().getPariticpants(event.getId());
-		ArrayList<UserData> list = new ArrayList<>();
-		participants.forEach(p->{
-			list.add(model.getDbManager().getUserDataFromDBUserEntity(p));
-		});
-		participants.forEach(p -> {
-			SocketIOClient client = connections.get(p.getEmail());
-			if(client != null)
-			{
-				NotificationHandler.sendNitification(client, new EventInvitationNotificationData(event.getId(),list,event.getTitle()));
-			}
-		});
-	}
-	
-	private void notifyParticipants(Event event)
-	{
-		ArrayList<User> participants = model.getDbManager().getPariticpants(event.getId());
-		participants.forEach(p -> {
-			SocketIOClient client = connections.get(p.getEmail());
-			if(client != null)
-			{
-				NotificationHandler.sendNitification(client, new EventCloseNotificationData(event.getId()));
-			}
-		});
-	}
 	
 	private ResponseData CloseEvent(RequestData reqData)
 	{
@@ -217,8 +193,9 @@ public class Controller implements Observer,IController {
 				return new ErrorResponseData(ErrorType.TechnicalError);
 			else
 			{			
-				//Get Byte array from req and send to GoogleService
-				notifyParticipants(event);
+				//Get Byte array from req and send to GoogleService-TODO
+				ArrayList<User> l = model.getDbManager().getPariticpants(event.getId());
+				sendEventCloseNotificationToUsers(event,l);
 				return new BooleanResponseData(true);
 			}
 		}
@@ -258,26 +235,29 @@ public class Controller implements Observer,IController {
 		ArrayList<String> participantsEmail = (ArrayList<String>) ((CreateEventRequestData)reqData).getUsersEmails();
 		int i=0;
 		LinkedList<User> participants = new LinkedList<>();
-		do {
-			User u = model.getDbManager().getUser(participantsEmail.get(i));
+		participantsEmail.forEach(pe -> {
+			User u = model.getDbManager().getUser(pe);
 			if(u!=null)
-				participants.add(u);
-			i++;
-		}while(i < participantsEmail.size());
+				participants.add(u);		
+		});
 		
 		//create Event
-		Event e = new Event(user,((CreateEventRequestData)reqData).getTitle(), new Date(Calendar.getInstance().getTime().getTime()), 0, 0,((CreateEventRequestData)reqData).getDescription());
+		Event e = new Event(user,
+				((CreateEventRequestData)reqData).getTitle(),
+				new Date(Calendar.getInstance().getTime().getTime()),
+				0,
+				0,
+				((CreateEventRequestData)reqData).getDescription());
 		if (!(model.getDbManager().addToDataBase(e) > 0))
 			return new ErrorResponseData(ErrorType.TechnicalError);	
 		//create UserEvent
-		ArrayList<Integer> ids = new ArrayList<>();
+		LinkedList<UserData> l = new LinkedList<>();
 		participants.forEach(p -> {
-			ids.add(p.getId());
-			model.getDbManager().addToDataBase(new UserEvent(p, e, 0));
+			model.getDbManager().addToDataBase(new UserEvent(p,e,0));
+			l.add(model.getDbManager().getUserDataFromDBUserEntity(p));
 		});
-		
-		inviteParticipants(e);
-		
+		//send invites
+		sendEventInventationToUsers(e, l);
 		return new BooleanResponseData(true);
 	}
 	
@@ -304,10 +284,10 @@ public class Controller implements Observer,IController {
 		case CreateEventRequest:
 			return CreateEvent(reqData);
 		case EventProtocolRequest:
-			return EventProtocol(reqData);
-		case PendingEventsRequest:
-			return PendingEvents(reqData);
-		case ProfilePictureRequest:
+//			return EventProtocol(reqData);
+//		case PendingEventsRequest:
+//			return PendingEvents(reqData);
+//		case ProfilePictureRequest:
 			return ProfilePicture(reqData);
 		case UpdateProfilePictureRequest:
 			return UpdateProfilePicture(reqData);
@@ -333,15 +313,28 @@ public class Controller implements Observer,IController {
 	
 	private ResponseData UpdateProfilePicture(RequestData reqData)
 	{
+		try {
 		view.printToConsole(reqData.getUserEmail()+" Send UpdateProfilePictureRequest");
 		User user = getUserFromDB(reqData);
 		if(user == null)
 			return new ErrorResponseData(ErrorType.UserIsNotExist);
 		ProfilePicture pp = model.getDbManager().getUserProfilePicture(user.getId());
-		if (pp == null)
-			return new ErrorResponseData(ErrorType.UserHasNoProfilePicture);
-		pp.setProfilePictureUrl(((UpdateProfilePictureRequestData)reqData).getNewProfilePictureUrl());
-		return new BooleanResponseData(model.getDbManager().editInDataBase(pp.getId(), DBEntityType.ProfilePicture, pp));
+		String url = ""+user.getId()+".jpg";
+		if (pp == null)//Need to add to DB
+		{
+			pp = new ProfilePicture(user, url);
+			model.getDbManager().addToDataBase(pp);
+		}
+		String pictureBytes = ((UpdateProfilePictureRequestData)reqData).getProfilePictureBytes();
+		byte[] byteArr = Base64.getDecoder().decode(pictureBytes);
+		InputStream in = new ByteArrayInputStream(byteArr);
+		BufferedImage bImageFromConvert = ImageIO.read(in);
+		ImageIO.write(bImageFromConvert, "jpg", new File("./src/resources/ProfilePictures/"+url));	
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+		return null;
 	}
 	
 	private ResponseData ProfilePicture(RequestData reqData)
@@ -511,11 +504,6 @@ public class Controller implements Observer,IController {
 		return new EventsListResponseData(eventsList);
 	}
 
-
-	
-	
-
-	
 	@Override	
 	public void update(Observable o, Object arg) {
 		// TODO Auto-generated method stub
@@ -538,5 +526,26 @@ public class Controller implements Observer,IController {
 		return new byte[0];
 	}
 	
-
+	private void sendEventInventationToUsers(Event e,List<UserData> participants)
+	{
+		participants.forEach(p->{			
+			SocketIOClient sock = connections.get(p.getEmail());
+			if(sock != null)
+			{
+				ClientHandler.sendToClient(sock, "Notification", new EventInvitationNotificationData(model.getDbManager().getEventDataByEvent(e, participants)));
+			}
+		});
+	}
+	private void sendEventCloseNotificationToUsers(Event e,List<User> participants)
+	{
+		participants.forEach(p->{			
+			SocketIOClient sock = connections.get(p.getEmail());
+			if(sock != null)
+			{
+				ClientHandler.sendToClient(sock, "Notification", new EventCloseNotificationData(e.getId()));
+			}
+		});
+	}
+	
+	
 }

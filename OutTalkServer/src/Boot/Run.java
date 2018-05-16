@@ -1,5 +1,15 @@
 package Boot;
 
+import java.awt.Image;
+import java.awt.image.BufferedImage;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+
+import javax.imageio.ImageIO;
+
 import MVC.*;
 
 public class Run {
@@ -18,6 +28,7 @@ public class Run {
 		Model model = Model.getInstance();
 		Controller controller = new Controller(model,view,ip,port);
 		controller.start();
+		
 		
 	}
 
