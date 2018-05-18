@@ -26,6 +26,14 @@ public class DBManager {
 	private Session session;
 	private static DBManager instance = null;
 	
+	public ArrayList<UserEvent> getUnAnsweredInvites(int userId)
+	{
+		startSession();
+		ArrayList<UserEvent> list = (ArrayList<UserEvent>)session.createQuery(String.format("from UserEvents where Answer = 0 and UserId = " + userId)).list();
+		closeSession();
+		return list;
+	}
+	
 	public ArrayList<User> getPariticpants(int eventId)
 	{
 		startSession();
@@ -288,5 +296,13 @@ public class DBManager {
 	public UserData getUserDataFromDBUserEntity(User user)
 	{
 		return new UserData(user.getFirstName(), user.getLastName(), user.getEmail(), getProfilePictureUrlByUserId(user.getId()), user.getPhoneNumber());
+	}
+	
+	public LinkedList<UserEvent> getUserEventByEventId(int eventId)
+	{
+		startSession();
+		LinkedList<UserEvent> usersEvent = (LinkedList<UserEvent>)session.createQuery(String.format("from UserEvents where EventId = " + eventId)).list();
+		closeSession();
+		return usersEvent;
 	}
 }

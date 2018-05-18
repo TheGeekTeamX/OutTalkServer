@@ -14,6 +14,7 @@ create table Events(
 	DateCreated date not null,
 	IsFinished bit not null,
 	IsConverted bit not null,
+	Description nvarchar(199) not null,
 	foreign key (AdminId) references Users(Id)	
 )
 
@@ -31,7 +32,7 @@ create table UserEvents(
 	Id integer identity(1,1) primary key,
 	UserId int not null,
 	EventId int not null,
-	IsAccepted int not null,
+	Answer int not null,
 	foreign key (UserId) references Users(Id),
 	foreign key (EventId) references Events(Id)	
 )

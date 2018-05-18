@@ -2,6 +2,7 @@ package MVC;
 
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
@@ -35,6 +36,7 @@ import Notifications.EventInvitationNotificationData;
 import Requests.*;
 import Responses.*;
 import ResponsesEntitys.*;
+import Tools.BytesHandler;
 public class Controller implements Observer,IController {
 	private String url;
 	private int port;
@@ -46,6 +48,58 @@ public class Controller implements Observer,IController {
 	private PausableThreadPoolExecutor executionPool;
 	
 
+	@Override
+	public ResponseData execute(RequestData reqData) {
+		// TODO Auto-generated method stub
+		switch (reqData.getType()) {
+		case AddFriendRequest:
+			return AddFriend(reqData);//checked
+		case ChangePasswordRequest:
+			return ChangePassword(reqData);//checked
+		case CreateUserRequest:
+			return CreateUser(reqData);
+		case EditContactsListRequest:
+			return EditContactsList(reqData);
+		case EditUserRequest:
+			return EditUser(reqData);
+		case EventsListRequest:
+			return EventsList(reqData);
+		case ContactsListRequest:
+			return ContactList(reqData);//checked
+		case CloseEventRequest:
+			return CloseEvent(reqData);
+		case CreateEventRequest:
+			return CreateEvent(reqData);
+		case EventProtocolRequest:
+			return EventProtocol(reqData);
+		case PendingEventsRequest:
+			return PendingEvents(reqData);
+		case ProfilePictureRequest:
+			return ProfilePicture(reqData);
+		case UpdateProfilePictureRequest:
+			return UpdateProfilePicture(reqData);
+		case IsUserExistRequest:
+			return IsUserExist(reqData);
+		default:
+			System.out.println("default");
+			break;
+		}
+		return null;
+	}
+	
+	private void checkIfUserHasInvites(User u)
+	{
+		ArrayList<UserEvent> unAnsweredInvites = model.getDbManager().getUnAnsweredInvites(u.getId());
+		if(unAnsweredInvites != null && unAnsweredInvites.size()!=0)
+		{			
+			unAnsweredInvites.forEach(i -> {
+				ArrayList<UserData> l = new ArrayList<>();
+				l.add(model.getDbManager().getUserDataFromDBUserEntity(i.getUser()));
+				sendEventInventationToUsers(i.getEvent(), l);
+			});
+		}
+	}
+	
 	private String getClientEmailBySocket(SocketIOClient client)
 	{
 		for (String email : connections.keySet())
@@ -131,6 +185,7 @@ public class Controller implements Observer,IController {
 											new LoginResponseData(user.getId(), user.getFirstName(), user.getLastName(), user.getPhoneNumber(), model.getDbManager().getProfilePictureUrlByUserId(user.getId())));
 									view.printToConsole(credential.getUser().getEmail()+" Is Connected");
 									connections.put(user.getEmail(), client);
+									checkIfUserHasInvites(user);
 								}
 								else
 									ClientHandler.sendToClient(client, "Response", new ErrorResponseData(ErrorType.IncorrectCredentials));
@@ -189,6 +244,14 @@ public class Controller implements Observer,IController {
 		if(event.getAdmin().getId() == user.getId())
 		{			
 			event.setIsFinished(1);
+			LinkedList<UserEvent> usersEvent = model.getDbManager().getUserEventByEventId(event.getId());
+			usersEvent.forEach(ue->{
+				if(ue.getAnswer() == 0)//didn't answer yet
+				{
+					ue.setAnswer(2);
+					model.getDbManager().editInDataBase(ue.getId(), DBEntityType.UserEvent, ue);
+				}
+			});
 			if(model.getDbManager().editInDataBase(event.getId(), DBEntityType.Event, event))
 				return new ErrorResponseData(ErrorType.TechnicalError);
 			else
@@ -253,7 +316,8 @@ public class Controller implements Observer,IController {
 		//create UserEvent
 		LinkedList<UserData> l = new LinkedList<>();
 		participants.forEach(p -> {
-			model.getDbManager().addToDataBase(new UserEvent(p,e,0));
+			int answer = p.getEmail().equals(user.getEmail()) ? 1 :0 ;
+			model.getDbManager().addToDataBase(new UserEvent(p,e,answer));
 			l.add(model.getDbManager().getUserDataFromDBUserEntity(p));
 		});
 		//send invites
@@ -261,44 +325,7 @@ public class Controller implements Observer,IController {
 		return new BooleanResponseData(true);
 	}
 	
-	@Override
-	public ResponseData execute(RequestData reqData) {
-		// TODO Auto-generated method stub
-		switch (reqData.getType()) {
-		case AddFriendRequest:
-			return AddFriend(reqData);//checked
-		case ChangePasswordRequest:
-			return ChangePassword(reqData);//checked
-		case CreateUserRequest:
-			return CreateUser(reqData);
-		case EditContactsListRequest:
-			return EditContactsList(reqData);
-		case EditUserRequest:
-			return EditUser(reqData);
-		case EventsListRequest:
-			return EventsList(reqData);
-		case ContactsListRequest:
-			return ContactList(reqData);//checked
-		case CloseEventRequest:
-			return CloseEvent(reqData);
-		case CreateEventRequest:
-			return CreateEvent(reqData);
-		case EventProtocolRequest:
-//			return EventProtocol(reqData);
-//		case PendingEventsRequest:
-//			return PendingEvents(reqData);
-//		case ProfilePictureRequest:
-			return ProfilePicture(reqData);
-		case UpdateProfilePictureRequest:
-			return UpdateProfilePicture(reqData);
-		case IsUserExistRequest:
-			return IsUserExist(reqData);
-		default:
-			System.out.println("default");
-			break;
-		}
-		return null;
-	}
+
 	private ResponseData IsUserExist(RequestData reqData)
 	{
 		view.printToConsole(reqData.getUserEmail()+" Send IsUserExistRequest");
@@ -313,7 +340,7 @@ public class Controller implements Observer,IController {
 	
 	private ResponseData UpdateProfilePicture(RequestData reqData)
 	{
-		try {
+
 		view.printToConsole(reqData.getUserEmail()+" Send UpdateProfilePictureRequest");
 		User user = getUserFromDB(reqData);
 		if(user == null)
@@ -327,14 +354,10 @@ public class Controller implements Observer,IController {
 		}
 		String pictureBytes = ((UpdateProfilePictureRequestData)reqData).getProfilePictureBytes();
 		byte[] byteArr = Base64.getDecoder().decode(pictureBytes);
-		InputStream in = new ByteArrayInputStream(byteArr);
-		BufferedImage bImageFromConvert = ImageIO.read(in);
-		ImageIO.write(bImageFromConvert, "jpg", new File("./src/resources/ProfilePictures/"+url));	
-		} catch (IOException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
-		}
-		return null;
+		
+		return BytesHandler.SaveByteArrayInDestinationAsImage(byteArr, "jpg", ".\\src\\resources\\ProfilePictures\\"+url) ? 
+				new BooleanResponseData(true) : 
+					new ErrorResponseData(ErrorType.TechnicalError);
 	}
 	
 	private ResponseData ProfilePicture(RequestData reqData)
@@ -347,17 +370,7 @@ public class Controller implements Observer,IController {
 		if (pp == null)
 			return new ErrorResponseData(ErrorType.UserHasNoProfilePicture);
 		else
-		{
-			try {				
-				File f = new File("resources/ProfilePictures/"+user.getId()+".jpg");
-				return new ProfilePictureResponseData(getBytesOfFile(f));
-			}
-			catch (Exception e){
-				e.printStackTrace();
-				return new ErrorResponseData(ErrorType.TechnicalError);
-			}
-			
-		}
+			return new ProfilePictureResponseData(BytesHandler.FromImageToByteArray(new File(".\\src\\resources\\ProfilePictures\\"+user.getId()+".jpg"), "jpg"));		
 	}
 	
 	
@@ -494,7 +507,7 @@ public class Controller implements Observer,IController {
 	}
 	private ResponseData EventsList(RequestData reqData)
 	{
-		view.printToConsole(reqData.getUserEmail()+" Send EcentListRequest");
+		view.printToConsole(reqData.getUserEmail()+" Send EventListRequest");
 		User user = getUserFromDB(reqData);
 		if(user == null)
 			return new ErrorResponseData(ErrorType.UserIsNotExist);
