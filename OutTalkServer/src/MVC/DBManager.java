@@ -26,10 +26,18 @@ public class DBManager {
 	private Session session;
 	private static DBManager instance = null;
 	
+	public UserEvent getRelatedUserEvent(int userId,int eventId)
+	{
+		startSession();
+		ArrayList<UserEvent> list = (ArrayList<UserEvent>)session.createQuery(String.format("from UserEvents where and UserId = {0} and EventId = {1}",userId,eventId)).list();
+		closeSession();
+		return list == null ? null : (list.size() == 0 ? null : list.get(0));
+	}
+	
 	public ArrayList<UserEvent> getUnAnsweredInvites(int userId)
 	{
 		startSession();
-		ArrayList<UserEvent> list = (ArrayList<UserEvent>)session.createQuery(String.format("from UserEvents where Answer = 0 and UserId = " + userId)).list();
+		ArrayList<UserEvent> list = (ArrayList<UserEvent>)session.createQuery(String.format("from UserEvents where Answer = 0 and UserId = {0}", userId)).list();
 		closeSession();
 		return list;
 	}
@@ -37,7 +45,7 @@ public class DBManager {
 	public ArrayList<User> getPariticpants(int eventId)
 	{
 		startSession();
-		ArrayList<UserEvent> list = (ArrayList<UserEvent>)session.createQuery(String.format("from UserEvents where EventId = " + eventId)).list();
+		ArrayList<UserEvent> list = (ArrayList<UserEvent>)session.createQuery(String.format("from UserEvents where EventId = {0} and Answer = 1", eventId)).list();
 		if(list == null)
 			return null;
 		ArrayList<User> users = new ArrayList<>();
@@ -63,7 +71,7 @@ public class DBManager {
 	public Contact getContact(int userId, int friendId)
 	{
 		startSession();
-		ArrayList<Contact> list = (ArrayList<Contact>)session.createQuery(String.format("from Contacts where UserId =" + userId+" and FriendId = "+friendId)).list();
+		ArrayList<Contact> list = (ArrayList<Contact>)session.createQuery(String.format("from Contacts where UserId = {0} and FriendId = {1}",userId,friendId)).list();
 		closeSession();
 		return list != null ? (list.size() != 0 ? list.get(0) : null) : null;
 
@@ -84,7 +92,7 @@ public class DBManager {
 	public ProfilePicture getUserProfilePicture(int userId)
 	{
 		startSession();
-		ArrayList<ProfilePicture> list = (ArrayList<ProfilePicture>)session.createQuery(String.format("from ProfilePictures where UserId = " + userId)).list();
+		ArrayList<ProfilePicture> list = (ArrayList<ProfilePicture>)session.createQuery(String.format("from ProfilePictures where UserId = {0}", userId)).list();
 		closeSession();
 		return list != null ? (list.size() != 0 ? list.get(0) : null) : null;
 	}
@@ -93,7 +101,7 @@ public class DBManager {
 	{
 		startSession();
 		
-		ArrayList<UserEvent> userEventList = (ArrayList<UserEvent>)session.createQuery(String.format("from UserEvents where UserId = " + userId)).list();
+		ArrayList<UserEvent> userEventList = (ArrayList<UserEvent>)session.createQuery(String.format("from UserEvents where UserId = {0}" , userId)).list();
 		ArrayList<UserData> usersDataList = new ArrayList<>();
 		userEventList.forEach(ue->{
 			usersDataList.add(getUserDataFromDBUserEntity(ue.getUser()));
@@ -110,21 +118,21 @@ public class DBManager {
 	public ArrayList<Contact> getContactsList(int userId)
 	{
 		startSession();
-		ArrayList<Contact> list = (ArrayList<Contact>)session.createQuery(String.format("from Contacts where UserId = " + userId)).list();
+		ArrayList<Contact> list = (ArrayList<Contact>)session.createQuery(String.format("from Contacts where UserId = {0}" , userId)).list();
 		closeSession();
 		return list;
 	}
 	public User getUser(String email)
 	{
 		startSession();
-		ArrayList<User> list = (ArrayList<User>)session.createQuery(String.format("from Users where Email like '%1$s'", email)).list();
+		ArrayList<User> list = (ArrayList<User>)session.createQuery(String.format("from Users where Email like '%{0}%'", email)).list();
 		closeSession();
 		return list != null ? (list.size() != 0 ? list.get(0) : null) : null;
 	}
 	public Credential getCredential(int userId)
 	{
 		startSession();
-		ArrayList<Credential> list = (ArrayList<Credential>)session.createQuery("from Credentials where UserId = " + userId).list();
+		ArrayList<Credential> list = (ArrayList<Credential>)session.createQuery(String.format("from Credentials where UserId = {0}", userId)).list();
 		closeSession();
 		return list != null ? list.get(0) : null;
 	}
@@ -253,7 +261,7 @@ public class DBManager {
 
 	public LinkedList<EventData> getRelatedPendingEvents(int userId)
 	{
-		ArrayList<UserEvent> pendingEvents = (ArrayList<UserEvent>)session.createQuery(String.format("from UserEvents where IsAccepted = 0 and UserId = " + userId)).list();
+		ArrayList<UserEvent> pendingEvents = (ArrayList<UserEvent>)session.createQuery(String.format("from UserEvents where Answer = 0 and UserId = {0}", userId)).list();
 		if(pendingEvents == null)
 			return null;
 		LinkedList<EventData> eventsData = new LinkedList<>();
@@ -262,7 +270,7 @@ public class DBManager {
 			if(e !=  null)
 			{
 				LinkedList<String> participantsNames = new LinkedList<>();
-				ArrayList<UserEvent> participants = (ArrayList<UserEvent>)session.createQuery(String.format("from UserEvents where EventId = " + e.getId())).list();
+				ArrayList<UserEvent> participants = (ArrayList<UserEvent>)session.createQuery(String.format("from UserEvents where EventId = {0}", e.getId())).list();
 				ArrayList<UserData> udList = new ArrayList<>();
 				participants.forEach(p->{
 					udList.add(getUserDataFromDBUserEntity(p.getUser()));
@@ -301,7 +309,7 @@ public class DBManager {
 	public LinkedList<UserEvent> getUserEventByEventId(int eventId)
 	{
 		startSession();
-		LinkedList<UserEvent> usersEvent = (LinkedList<UserEvent>)session.createQuery(String.format("from UserEvents where EventId = " + eventId)).list();
+		LinkedList<UserEvent> usersEvent = (LinkedList<UserEvent>)session.createQuery(String.format("from UserEvents where EventId = {0}", eventId)).list();
 		closeSession();
 		return usersEvent;
 	}

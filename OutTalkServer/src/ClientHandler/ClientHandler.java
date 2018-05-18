@@ -22,55 +22,9 @@ public class ClientHandler  {
 		return gson.toJson(obj);
 	}
 	
-	public static void handleClient(SocketIOClient client, IController controller, String data) {
-
-		RequestData rd = (RequestData) gson.fromJson(data, RequestData.class);
-		switch (rd.getType()) {
-		case AddFriendRequest:
-			sendToClient(client, "Response", controller.execute(getObjectFromString(data, AddFriendRequestData.class)));
-			return;
-		case ChangePasswordRequest:
-			sendToClient(client, "Response", controller.execute(getObjectFromString(data, ChangePasswordRequestData.class)));
-			return;
-		case CreateUserRequest:
-			sendToClient(client, "Response", controller.execute(getObjectFromString(data, CreateEventRequestData.class)));
-			return;
-		case EditContactsListRequest:
-			sendToClient(client, "Response", controller.execute(getObjectFromString(data, EditContactsListRequestData.class)));
-			return;
-		case EditUserRequest:
-			sendToClient(client, "Response", controller.execute(getObjectFromString(data, EditUserRequestData.class)));
-			return;
-		case EventsListRequest:
-			sendToClient(client, "Response", controller.execute(getObjectFromString(data, EventsListRequestData.class)));
-			return;
-		case ContactsListRequest:
-			sendToClient(client, "Response", controller.execute(getObjectFromString(data, ContactsListRequestData.class)));
-			return;
-		case CloseEventRequest:
-			sendToClient(client, "Response", controller.execute(getObjectFromString(data, CloseEventRequestData.class)));
-			return;
-		case CreateEventRequest:
-			sendToClient(client, "Response", controller.execute(getObjectFromString(data, CreateEventRequestData.class)));
-			return;
-		case EventProtocolRequest:
-			sendToClient(client, "Response", controller.execute(getObjectFromString(data, EventProtocolRequestData.class)));
-			return;
-		case PendingEventsRequest:
-			sendToClient(client, "Response", controller.execute(getObjectFromString(data, PendingEventsRequestData.class)));
-			return;
-		case ProfilePictureRequest:
-			sendToClient(client, "Response", controller.execute(getObjectFromString(data, ProfilePictureRequestData.class)));
-			return;
-		case UpdateProfilePictureRequest:
-			sendToClient(client, "Response", controller.execute(getObjectFromString(data, UpdateProfilePictureRequestData.class)));
-			return;
-		case IsUserExistRequest:
-			sendToClient(client, "Response", controller.execute(getObjectFromString(data, IsUserExistRequestData.class)));
-			return;
-		default:
-			return;
-		}
+	public static void handleClient(SocketIOClient client, IController controller, String data)
+	{
+		sendToClient(client, "Response", controller.execute(data));
 	}
 
 	

@@ -7,6 +7,6 @@ import Requests.RequestData;
 import Responses.ResponseData;
 
 public interface IController {
-	ResponseData execute(RequestData ReqData);
+	ResponseData execute(String data);
 
 }
