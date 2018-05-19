@@ -7,7 +7,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.Base64;
+import org.apache.commons.codec.binary.Base64;
 import java.util.List;
 
 import javax.sound.sampled.AudioFileFormat;
@@ -93,7 +93,7 @@ public class WavSplitFixedTime {
 			AudioSystem.write(ais, AudioFileFormat.Type.WAVE, out);
 
 			byte[] audioBytes = out.toByteArray();
-			String splittedWav = Base64.getEncoder().encodeToString(audioBytes);
+			String splittedWav = Base64.encodeBase64String(audioBytes);
 			return splittedWav;
 		} catch (Exception e) {
 			e.printStackTrace();
