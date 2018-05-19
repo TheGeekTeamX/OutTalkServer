@@ -29,9 +29,8 @@ public class ProfilePicture implements IDBEntity {
 
 
 
-	public ProfilePicture(int id, User user, String profilePictureUrl) {
+	public ProfilePicture(User user, String profilePictureUrl) {
 		super();
-		this.id = id;
 		this.user = user;
 		this.profilePictureUrl = profilePictureUrl;
 	}
