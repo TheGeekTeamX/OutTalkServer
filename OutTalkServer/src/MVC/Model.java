@@ -2,6 +2,8 @@ package MVC;
 
 import java.util.Observable;
 
+import DB.DBManager;
+
 public class Model extends Observable {
 	private static Model instance;
 	private DBManager dbManager;
@@ -18,10 +20,7 @@ public class Model extends Observable {
 	{
 		dbManager = DBManager.getInstance();
 	}
-	public void testDB()
-	{
-		dbManager.test();
-	}
+
 	public DBManager getDbManager() {
 		return dbManager;
 	}

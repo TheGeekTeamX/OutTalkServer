@@ -3,8 +3,7 @@ package ClientHandler;
 import com.corundumstudio.socketio.SocketIOClient;
 import com.google.gson.Gson;
 
-import MVC.IController;
-import Requests.*;
+import MVC.Controller;
 
 public class ClientHandler  {
 	private static Gson gson = new Gson();
@@ -22,7 +21,7 @@ public class ClientHandler  {
 		return gson.toJson(obj);
 	}
 	
-	public static void handleClient(SocketIOClient client, IController controller, String data)
+	public static void handleClient(SocketIOClient client, Controller controller, String data)
 	{
 		sendToClient(client, "Response", controller.execute(data));
 	}

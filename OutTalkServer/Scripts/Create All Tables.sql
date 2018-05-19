@@ -3,8 +3,8 @@ create table Users(
 	Email nvarchar(50) not null,
 	FirstName nvarchar (50) not null,
 	LastName nvarchar (50) not null,
-	PhoneNumber nvarchar(50),
-	Country nvarchar(20),
+	PhoneNumber nvarchar(50) not null,
+	Country nvarchar(20) not null,
 )
 
 create table Events(
@@ -54,5 +54,6 @@ create table Credentials(
 create table Protocols(
 	Id integer identity(1,1) primary key,
 	EventId int not null,
-	ProtocolURL nvarchar(50) not null
+	ProtocolURL nvarchar(50) not null,
+	foreign key (EventId) references Events(EventId),
 )

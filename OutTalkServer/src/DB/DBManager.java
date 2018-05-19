@@ -1,7 +1,6 @@
-package MVC;
+package DB;
 
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.LinkedList;
 import java.util.List;
@@ -26,6 +25,8 @@ public class DBManager {
 	private Session session;
 	private static DBManager instance = null;
 	
+	//Protocols
+	@SuppressWarnings("unchecked")
 	public String getRelatedEventProtocol(int eventId)
 	{
 		startSession();
@@ -34,22 +35,9 @@ public class DBManager {
 		return p != null ? p.get(0).getProtocolURL() : "";
 	}
 	
-	public UserEvent getRelatedUserEvent(int userId,int eventId)
-	{
-		startSession();
-		ArrayList<UserEvent> list = (ArrayList<UserEvent>)session.createQuery(String.format("from UserEvents where UserId = %d and EventId = %d",userId,eventId)).list();
-		closeSession();
-		return list == null ? null : (list.size() == 0 ? null : list.get(0));
-	}
+	//Event
 	
-	public ArrayList<UserEvent> getUnAnsweredInvites(int userId)
-	{
-		startSession();
-		ArrayList<UserEvent> list = (ArrayList<UserEvent>)session.createQuery(String.format("from UserEvents where Answer = 0 and UserId = %d", userId)).list();
-		closeSession();
-		return list;
-	}
-	
+	@SuppressWarnings("unchecked")
 	public ArrayList<User> getPariticpants(int eventId)
 	{
 		startSession();
@@ -64,52 +52,12 @@ public class DBManager {
 		return users;
 	}
 	
-	private Protocol getProtocol(int eventId)
-	{
-		return null;
-	}
-	
-	private Transaction startSession()
-	{
-		lock.lock();
-		session = factory.openSession();
-		return session.beginTransaction();
-	}
-	
-	public Contact getContact(int userId, int friendId)
-	{
-		startSession();
-		ArrayList<Contact> list = (ArrayList<Contact>)session.createQuery(String.format("from Contacts where UserId = %d and FriendId = %d",userId,friendId)).list();
-		closeSession();
-		return list != null ? (list.size() != 0 ? list.get(0) : null) : null;
-
-	}
-	
-	private void closeSession()
-	{
-		session.close();
-		lock.unlock();
-	}
-	
-	public void test()
-	{
-		User u = getUser("Test123@gmail.com");
-		System.out.println(u.toString());
-	}
-	
-	public ProfilePicture getUserProfilePicture(int userId)
-	{
-		startSession();
-		ArrayList<ProfilePicture> list = (ArrayList<ProfilePicture>)session.createQuery(String.format("from ProfilePictures where UserId = %d", userId)).list();
-		closeSession();
-		return list != null ? (list.size() != 0 ? list.get(0) : null) : null;
-	}
-	
+	@SuppressWarnings("unchecked")
 	public LinkedList<EventData> getEventsList(int userId)
 	{
 		startSession();
 		
-		ArrayList<UserEvent> userEventList = (ArrayList<UserEvent>)session.createQuery(String.format("from UserEvents where UserId = %d" , userId)).list();
+		ArrayList<UserEvent> userEventList = (ArrayList<UserEvent>)session.createQuery(String.format("from UserEvents where UserId = %d and Answer = 1" , userId)).list();
 		ArrayList<UserData> usersDataList = new ArrayList<>();
 		userEventList.forEach(ue->{
 			usersDataList.add(getUserDataFromDBUserEntity(ue.getUser()));
@@ -123,6 +71,30 @@ public class DBManager {
 		return events;
 	}
 	
+	public EventData getEventDataByEvent(Event e, List<UserData> udlist)
+	{
+		return new EventData(e.getId(),
+				e.getTitle(),
+				e.getDateCreated(),
+				udlist,
+				getRelatedEventProtocol(e.getId()),
+				((User)get(e.getId(),DBEntityType.User)).getEmail(),
+				e.getDescription(),
+				e.getIsFinished()== 1 ? false :true) ;
+	}
+	
+	//User
+	@SuppressWarnings("unchecked")
+	public Contact getContact(int userId, int friendId)
+	{
+		startSession();
+		ArrayList<Contact> list = (ArrayList<Contact>)session.createQuery(String.format("from Contacts where UserId = %d and FriendId = %d",userId,friendId)).list();
+		closeSession();
+		return list != null ? (list.size() != 0 ? list.get(0) : null) : null;
+
+	}
+	
+	@SuppressWarnings("unchecked")
 	public ArrayList<Contact> getContactsList(int userId)
 	{
 		startSession();
@@ -130,6 +102,8 @@ public class DBManager {
 		closeSession();
 		return list;
 	}
+	
+	@SuppressWarnings("unchecked")
 	public User getUser(String email)
 	{
 		startSession();
@@ -137,12 +111,77 @@ public class DBManager {
 		closeSession();
 		return list != null ? (list.size() != 0 ? list.get(0) : null) : null;
 	}
+	
+	@SuppressWarnings("unchecked")
 	public Credential getCredential(int userId)
 	{
 		startSession();
 		ArrayList<Credential> list = (ArrayList<Credential>)session.createQuery(String.format("from Credentials where UserId = %d", userId)).list();
 		closeSession();
 		return list != null ? list.get(0) : null;
+	}
+	
+	public UserData getUserDataFromDBUserEntity(User user)
+	{
+		return new UserData(user.getFirstName(), user.getLastName(), user.getEmail(), getProfilePictureUrlByUserId(user.getId()), user.getPhoneNumber());
+	}
+	
+	//UserEvent
+	@SuppressWarnings("unchecked")
+	public UserEvent getRelatedUserEvent(int userId,int eventId)
+	{
+		startSession();
+		ArrayList<UserEvent> list = (ArrayList<UserEvent>)session.createQuery(String.format("from UserEvents where UserId = %d and EventId = %d",userId,eventId)).list();
+		closeSession();
+		return list == null ? null : (list.size() == 0 ? null : list.get(0));
+	}
+
+	@SuppressWarnings("unchecked")
+	public ArrayList<UserEvent> getUnAnsweredInvites(int userId)
+	{
+		startSession();
+		ArrayList<UserEvent> list = (ArrayList<UserEvent>)session.createQuery(String.format("from UserEvents where Answer = 0 and UserId = %d", userId)).list();
+		closeSession();
+		return list;
+	}
+	
+	@SuppressWarnings("unchecked")
+	public LinkedList<UserEvent> getUserEventByEventId(int eventId)
+	{
+		startSession();
+		LinkedList<UserEvent> usersEvent = (LinkedList<UserEvent>)session.createQuery(String.format("from UserEvents where EventId = %d and Answer = 1", eventId)).list();
+		closeSession();
+		return usersEvent;
+	}
+	
+	
+	//Profile Pictures
+	@SuppressWarnings("unchecked")
+	public ProfilePicture getUserProfilePicture(int userId)
+	{
+		startSession();
+		ArrayList<ProfilePicture> list = (ArrayList<ProfilePicture>)session.createQuery(String.format("from ProfilePictures where UserId = %d", userId)).list();
+		closeSession();
+		return list != null ? (list.size() != 0 ? list.get(0) : null) : null;
+	}
+	
+	public String getProfilePictureUrlByUserId(int userId)
+	{
+		return (this.getUserProfilePicture(userId)).getProfilePictureUrl();
+	}
+	
+	//Core
+	private Transaction startSession()
+	{
+		lock.lock();
+		session = factory.openSession();
+		return session.beginTransaction();
+	}
+	
+	private void closeSession()
+	{
+		session.close();
+		lock.unlock();
 	}
 	
 	public IDBEntity get(int id, DBEntityType entityType)
@@ -186,6 +225,7 @@ public class DBManager {
 		}
 		return entity;
 	}
+	
 	public int addToDataBase(Object obj)
 	{
 		Transaction tx = null;
@@ -260,6 +300,7 @@ public class DBManager {
 		}
 		return instance;
 	}
+	
 	private void connectToDataBase()
 	{
 		Logger.getLogger("org.hibernate").setLevel(Level.SEVERE);
@@ -267,58 +308,10 @@ public class DBManager {
 		lock = new ReentrantLock();
 	}
 
-	public LinkedList<EventData> getRelatedPendingEvents(int userId)
-	{
-		ArrayList<UserEvent> pendingEvents = (ArrayList<UserEvent>)session.createQuery(String.format("from UserEvents where Answer = 0 and UserId = %d", userId)).list();
-		if(pendingEvents == null)
-			return null;
-		LinkedList<EventData> eventsData = new LinkedList<>();
-		pendingEvents.forEach(pe -> {
-			Event e = (Event) get(pe.getEvent().getId(), DBEntityType.Event);
-			if(e !=  null)
-			{
-				LinkedList<String> participantsNames = new LinkedList<>();
-				ArrayList<UserEvent> participants = (ArrayList<UserEvent>)session.createQuery(String.format("from UserEvents where EventId = %d", e.getId())).list();
-				ArrayList<UserData> udList = new ArrayList<>();
-				participants.forEach(p->{
-					udList.add(getUserDataFromDBUserEntity(p.getUser()));
-				});
-				participants.forEach(p -> {
-					participantsNames.add(p.getUser().getEmail());
-				});
-				eventsData.add(getEventDataByEvent(pe.getEvent(), udList));
-				
-			}
-		});
-		return eventsData;
-	}
+
 	
-	public String getProfilePictureUrlByUserId(int userId)
-	{
-		return (this.getUserProfilePicture(userId)).getProfilePictureUrl();
-	}
+
+
 	
-	public EventData getEventDataByEvent(Event e, List<UserData> udlist)
-	{
-		return new EventData(e.getId(),
-				e.getTitle(),
-				e.getDateCreated(),
-				udlist,
-				"URL",
-				((User)get(e.getId(),DBEntityType.User)).getEmail(),
-				e.getDescription(),
-				e.getIsFinished()== 1 ? false :true) ;
-	}
-	public UserData getUserDataFromDBUserEntity(User user)
-	{
-		return new UserData(user.getFirstName(), user.getLastName(), user.getEmail(), getProfilePictureUrlByUserId(user.getId()), user.getPhoneNumber());
-	}
-	
-	public LinkedList<UserEvent> getUserEventByEventId(int eventId)
-	{
-		startSession();
-		LinkedList<UserEvent> usersEvent = (LinkedList<UserEvent>)session.createQuery(String.format("from UserEvents where EventId = %d", eventId)).list();
-		closeSession();
-		return usersEvent;
-	}
+
 }

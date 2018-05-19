@@ -12,12 +12,9 @@ import java.util.Observable;
 import java.util.Observer;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeUnit;
-
-
 import com.corundumstudio.socketio.*;
 import com.corundumstudio.socketio.listener.DataListener;
 import com.corundumstudio.socketio.listener.DisconnectListener;
-
 import ClientHandler.*;
 import DB.*;
 import Enums.*;
@@ -29,7 +26,9 @@ import Requests.*;
 import Responses.*;
 import ResponsesEntitys.*;
 import Tools.BytesHandler;
-public class Controller implements Observer,IController {
+
+
+public class Controller implements Observer {
 	private String pathToResources = ".\\src\\resources";
 	private String url;
 	private int port;
@@ -41,7 +40,7 @@ public class Controller implements Observer,IController {
 	private PausableThreadPoolExecutor executionPool;
 	
 
-	@Override
+	
 	public ResponseData execute(String data) {
 		// TODO Auto-generated method stub
 		RequestData reqData = ClientHandler.getObjectFromString(data, RequestData.class);
@@ -74,6 +73,8 @@ public class Controller implements Observer,IController {
 			return IsUserExist(ClientHandler.getObjectFromString(data, IsUserExistRequestData.class));
 		case JoinEvent:
 			return JoinEvent(ClientHandler.getObjectFromString(data, JoinEventRequestData.class));
+		case DeclineEvent:
+			return DeclineEvent(ClientHandler.getObjectFromString(data, DeclineEventRequestData.class));
 		case LeaveEvent:
 			return LeaveEvent(ClientHandler.getObjectFromString(data, JoinEventRequestData.class));
 		default:
@@ -82,6 +83,24 @@ public class Controller implements Observer,IController {
 		}
 		return null;
 	}
+	
+	private ResponseData DeclineEvent(DeclineEventRequestData reqData)
+	{
+		view.printToConsole(reqData.getUserEmail()+" Send DeclineEventRequest");
+		User user = getUserFromDB(reqData);
+		if(user == null)
+			return new ErrorResponseData(ErrorType.UserIsNotExist);
+		UserEvent ue = model.getDbManager().getRelatedUserEvent(user.getId(), reqData.getEventId());
+		if(ue == null)
+			return new ErrorResponseData(ErrorType.NoPendingEvents);
+		if(ue.getAnswer() == 0)
+		{
+			ue.setAnswer(2);
+			model.getDbManager().editInDataBase(ue.getId(), DBEntityType.UserEvent,ue);
+		}
+		return new BooleanResponseData(true);
+	}
+	
 	private ResponseData LeaveEvent(JoinEventRequestData reqData)
 	{
 		view.printToConsole(reqData.getUserEmail()+" Send LeaveEventRequest");
@@ -313,17 +332,7 @@ public class Controller implements Observer,IController {
 		return protocol != null ? new EventProtocolResponseData(reqData.getEventID(), protocol) : new ErrorResponseData(ErrorType.TechnicalError);
 	}
 	
-	private ResponseData PendingEvents(RequestData reqData)
-	{
-		view.printToConsole(reqData.getUserEmail()+" Send PendingEventsRequest");
-		User user = getUserFromDB(reqData);
-		if(user == null)
-			return new ErrorResponseData(ErrorType.UserIsNotExist);
-		LinkedList<EventData> events = model.getDbManager().getRelatedPendingEvents(user.getId());
-		if(events == null)
-			return new ErrorResponseData(ErrorType.NoPendingEvents);
-		return new PendingEventsResponseData(events);
-	}
+
 	
 	private ResponseData CreateEvent(CreateEventRequestData reqData)
 	{
@@ -332,7 +341,6 @@ public class Controller implements Observer,IController {
 		if(user == null)
 			return new ErrorResponseData(ErrorType.UserIsNotExist);
 		ArrayList<String> participantsEmail = (ArrayList<String>) (reqData.getUsersEmails());
-		int i=0;
 		LinkedList<User> participants = new LinkedList<>();
 		participantsEmail.forEach(pe -> {
 			User u = model.getDbManager().getUser(pe);
@@ -496,7 +504,7 @@ public class Controller implements Observer,IController {
 			return new ErrorResponseData(ErrorType.BothPasswordsEquals);
 		credential.setCredntial(reqData.getNewPassword());
 		Boolean res =model.getDbManager().editInDataBase(credential.getId(), DBEntityType.Credential, credential);
-		return new BooleanResponseData(true);
+		return res ? new BooleanResponseData(true) : new ErrorResponseData(ErrorType.TechnicalError);
 	}
 	
 	private ResponseData AddFriend(AddFriendRequestData reqData)
