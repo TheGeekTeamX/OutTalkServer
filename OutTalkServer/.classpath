@@ -1,7 +1,12 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
 	<classpathentry excluding="ProfilePictures/" kind="src" path="src/resources"/>
-	<classpathentry excluding="resources/|resources/ProfilePictures/" kind="src" path="src"/>
+	<classpathentry including="**/*.java" kind="src" output="target/classes" path="src">
+		<attributes>
+			<attribute name="optional" value="true"/>
+			<attribute name="maven.pomderived" value="true"/>
+		</attributes>
+	</classpathentry>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.8">
 		<attributes>
 			<attribute name="maven.pomderived" value="true"/>
@@ -12,23 +17,7 @@
 			<attribute name="maven.pomderived" value="true"/>
 		</attributes>
 	</classpathentry>
-	<classpathentry kind="lib" path="lib/Utils/commons-codec-1.11.jar"/>
-	<classpathentry kind="lib" path="lib/Utils/gson-2.8.2.jar"/>
-	<classpathentry kind="lib" path="lib/Utils/httpclient-4.5.5.jar"/>
-	<classpathentry kind="lib" path="lib/SocketIO/jackson-annotations-2.7.0.jar"/>
-	<classpathentry kind="lib" path="lib/SocketIO/jackson-core-2.7.4.jar"/>
-	<classpathentry kind="lib" path="lib/SocketIO/jackson-databind-2.7.4.jar"/>
-	<classpathentry kind="lib" path="lib/SocketIO/netty-buffer-4.1.5.Final.jar"/>
-	<classpathentry kind="lib" path="lib/SocketIO/netty-codec-4.1.5.Final.jar"/>
-	<classpathentry kind="lib" path="lib/SocketIO/netty-codec-http-4.1.5.Final.jar"/>
-	<classpathentry kind="lib" path="lib/SocketIO/netty-common-4.1.5.Final.jar"/>
-	<classpathentry kind="lib" path="lib/SocketIO/netty-handler-4.1.5.Final.jar"/>
-	<classpathentry kind="lib" path="lib/SocketIO/netty-resolver-4.1.5.Final.jar"/>
-	<classpathentry kind="lib" path="lib/SocketIO/netty-socketio-1.7.12.jar"/>
-	<classpathentry kind="lib" path="lib/SocketIO/netty-transport-4.1.5.Final.jar"/>
-	<classpathentry kind="lib" path="lib/SocketIO/netty-transport-native-epoll-4.1.5.Final.jar"/>
-	<classpathentry kind="lib" path="lib/SocketIO/slf4j-api-1.7.21.jar"/>
-	<classpathentry kind="lib" path="lib/Utils/sqljdbc42.jar"/>
 	<classpathentry kind="lib" path="lib/Utils/Utils.jar"/>
+	<classpathentry kind="lib" path="lib/Utils/sqljdbc42.jar"/>
 	<classpathentry kind="output" path="target/classes"/>
 </classpath>

@@ -1,14 +1,6 @@
 package MVC;
 
-import java.awt.image.BufferedImage;
-import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.file.Files;
+
 import java.sql.Date;
 import java.util.ArrayList;
 import java.util.Base64;
@@ -21,10 +13,8 @@ import java.util.Observer;
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.TimeUnit;
 
-import javax.imageio.ImageIO;
 
 import com.corundumstudio.socketio.*;
-import com.corundumstudio.socketio.listener.ConnectListener;
 import com.corundumstudio.socketio.listener.DataListener;
 import com.corundumstudio.socketio.listener.DisconnectListener;
 
@@ -40,6 +30,7 @@ import Responses.*;
 import ResponsesEntitys.*;
 import Tools.BytesHandler;
 public class Controller implements Observer,IController {
+	private String pathToResources = ".\\src\\resources";
 	private String url;
 	private int port;
 	private Controller instance;
@@ -314,8 +305,12 @@ public class Controller implements Observer,IController {
 		view.printToConsole(reqData.getUserEmail()+" Send EventProtocolRequest");
 		User user = getUserFromDB(reqData);
 		if(user == null)
-			return new ErrorResponseData(ErrorType.UserIsNotExist);	
-		return null;
+			return new ErrorResponseData(ErrorType.UserIsNotExist);
+		String protocolName = model.getDbManager().getRelatedEventProtocol(reqData.getEventID());
+		if(protocolName == null || protocolName.equals(""))
+			return new ErrorResponseData(ErrorType.ProtocolIsNotExist);
+		ArrayList<ProtocolLine> protocol = BytesHandler.fromTextFileToProtocol(pathToResources+"\\Protocols\\"+protocolName);
+		return protocol != null ? new EventProtocolResponseData(reqData.getEventID(), protocol) : new ErrorResponseData(ErrorType.TechnicalError);
 	}
 	
 	private ResponseData PendingEvents(RequestData reqData)
@@ -390,7 +385,7 @@ public class Controller implements Observer,IController {
 		}
 		byte[] byteArr = Base64.getDecoder().decode(reqData.getProfilePictureBytes());
 		
-		return BytesHandler.SaveByteArrayInDestinationAsImage(byteArr, "jpg", ".\\src\\resources\\ProfilePictures\\"+url) ? 
+		return BytesHandler.SaveByteArrayInDestinationAsImage(byteArr, "jpg", pathToResources+"\\ProfilePictures\\"+url) ? 
 				new BooleanResponseData(true) : 
 					new ErrorResponseData(ErrorType.TechnicalError);
 	}
@@ -405,7 +400,7 @@ public class Controller implements Observer,IController {
 		if (pp == null)
 			return new ErrorResponseData(ErrorType.UserHasNoProfilePicture);
 		else
-			return new ProfilePictureResponseData(BytesHandler.FromImageToByteArray(".\\src\\resources\\ProfilePictures\\"+user.getId()+".jpg", "jpg"));		
+			return new ProfilePictureResponseData(BytesHandler.FromImageToByteArray(pathToResources+"\\ProfilePictures\\"+user.getId()+".jpg", "jpg"));		
 	}
 	
 	
