@@ -1,11 +1,13 @@
 package Test;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 
 import Recognize.RecognizeManager;
 import Recognize.WavSplitFixedTime;
+import ResponsesEntitys.ProtocolLine;
 
 public class RecognizeManagerTest {
 
@@ -23,7 +25,7 @@ public class RecognizeManagerTest {
 		List<String> usersList = new LinkedList<String>(Arrays.asList(users.split(",")));
 		
 		//algo
-		rm.BuildProtocol(wavBytesList, usersList);
+		ArrayList<ProtocolLine> pl = rm.BuildProtocol(wavBytesList, usersList);
 		System.out.println("finish");
 	}
 

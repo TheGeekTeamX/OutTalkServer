@@ -27,12 +27,16 @@ import org.apache.http.impl.client.BasicResponseHandler;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.message.BasicNameValuePair;
 import org.json.JSONObject;
+
+import ResponsesEntitys.ProtocolLine;
+
 import org.apache.commons.codec.binary.Base64;
 
 public class RecognizeManager {
 	
 	// Send the Wav to recognize service
-	public void SendWavToRecognize(String wavPath,String eventId,String action) {
+	public 	ArrayList<ProtocolLine> SendWavToRecognize(String wavPath,String eventId,String action) {
+		ArrayList<ProtocolLine> pl = new ArrayList<>();
 		// Divide wav file to chunks of 2 seconds
 		WavSplitFixedTime ws = new WavSplitFixedTime(wavPath, 2);
 		List<String> list = ws.getList();
@@ -44,12 +48,7 @@ public class RecognizeManager {
 		postParameters.add(new BasicNameValuePair("label", "sahar"));
 		HttpPost post = new HttpPost("http://193.106.55.106:5000/predict");
 		
-		switch (action) {
-		case "OpenEvent":
-			
-			break;
-			
-		case "SentToRecognize":
+
 			StringBuilder sb = new StringBuilder();
 			for (String str : list) {
 				sb.append(str);
@@ -69,8 +68,9 @@ public class RecognizeManager {
 				String users = response.getJSONArray("result").toString();
 				List<String> usersList = new LinkedList<String>(Arrays.asList(users.split(",")));
 
-				BuildProtocol(list, usersList);
+				 pl = BuildProtocol(list, usersList);
 				System.out.println(response.toString());
+				
 
 			} catch (ClientProtocolException e) {
 				// TODO Auto-generated catch block
@@ -78,20 +78,16 @@ public class RecognizeManager {
 			} catch (IOException e) {
 				// TODO Auto-generated catch block
 				e.printStackTrace();
+				return null;
 			}
-			break;
-
-		default:
-			break;
-		}
-
-
+			return pl;
 	}
 
-	// Get the list of user in the record from recognize service and compare with
-	// the regular record
-	public void BuildProtocol(List<String> wavBytes, List<String> usersList) {
+	// Get the list of user in the record from recognize service and compare with the regular record
+	public ArrayList<ProtocolLine> BuildProtocol(List<String> wavBytes, List<String> usersList) {
 		int startIndex = 0, endIndex = 0;
+		ArrayList<ProtocolLine> pl = new ArrayList<>();
+		
 		String currentUser = usersList.size() == 0 ? "" : usersList.get(0);
 		byte[] mergedBytes = null;
 		for (int i = 0; i < usersList.size(); i++) {
@@ -99,8 +95,9 @@ public class RecognizeManager {
 			{
 				mergedBytes = MergeWavList(wavBytes.subList(startIndex, endIndex + 1), "" + startIndex);
 				try {
-					String s = TranslateWithGoogleService(mergedBytes);
-					System.out.println(currentUser + ":" + s);
+					String text = TranslateWithGoogleService(mergedBytes);
+
+					pl.add(new ProtocolLine(currentUser, text));
 					startIndex = i;
 					endIndex = i;
 					currentUser = usersList.get(i);
@@ -111,6 +108,8 @@ public class RecognizeManager {
 			} else
 				endIndex = i;
 		}
+		return 	pl;
+		
 	}
 
 	private byte[] MergeWavList(List<String> wavBytes, String user1) {
