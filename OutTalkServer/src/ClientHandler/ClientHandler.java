@@ -29,7 +29,6 @@ public class ClientHandler  {
 	
 	public static void sendToClient(SocketIOClient client, String event, Object obj) {
 		// TODO Auto-generated method stub
-
 		String jsonString = getStringFromObject(obj);
 		client.sendEvent(event, jsonString);
 	}

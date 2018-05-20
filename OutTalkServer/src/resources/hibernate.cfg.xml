@@ -4,7 +4,7 @@
         <property name="connection.driver_class">com.microsoft.sqlserver.jdbc.SQLServerDriver</property>
         <property name="connection.url">jdbc:sqlserver://localhost:1433;database=OutTalk;integratedSecurity=true;</property>
         <!-- JDBC connection pool (use the built-in) -->
-        <property name="connection.pool_size">1</property>
+        <property name="connection.pool_size">10</property>
         <!-- SQL dialect -->
         <property name="dialect">org.hibernate.dialect.SQLServer2012Dialect</property>
         <!-- Echo all executed SQL to stdout -->
