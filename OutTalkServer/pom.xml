@@ -17,6 +17,9 @@
 			<resource>
 				<directory>resources</directory>
 			</resource>
+			<resource>
+				<directory>ProfilePictures</directory>
+			</resource>
 		</resources>
 		<plugins>
 			<plugin>

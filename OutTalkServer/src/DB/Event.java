@@ -22,7 +22,7 @@ public class Event implements IDBEntity{
 	@Column(name = "Title")
 	private String title;
 	@Column(name = "DateCreated")
-	private Date dateCreated;
+	private String dateCreated;
 	@Column(name = "IsFinished")
 	private int isFinished;
 	@Column(name = "IsConverted")
@@ -35,7 +35,7 @@ public class Event implements IDBEntity{
 		super();
 		// TODO Auto-generated constructor stub
 	}
-	public Event(User admin,String title, Date dateCreated, int isFinished, int isConverted, String description) {
+	public Event(User admin,String title, String dateCreated, int isFinished, int isConverted, String description) {
 		super();
 		this.title = title;
 		this.admin = admin;
@@ -70,10 +70,10 @@ public class Event implements IDBEntity{
 	public void setAdmin(User admin) {
 		this.admin = admin;
 	}
-	public Date getDateCreated() {
+	public String getDateCreated() {
 		return dateCreated;
 	}
-	public void setDateCreated(Date dateCreated) {
+	public void setDateCreated(String dateCreated) {
 		this.dateCreated = dateCreated;
 	}
 	public int getIsFinished() {

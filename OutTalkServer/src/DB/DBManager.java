@@ -16,7 +16,8 @@ import org.hibernate.cfg.Configuration;
 
 import DB.*;
 import Enums.*;
-import ResponsesEntitys.*;
+import ResponsesEntitys.EventData;
+import ResponsesEntitys.UserData;
 
 
 public class DBManager {
@@ -32,7 +33,7 @@ public class DBManager {
 		startSession();
 		ArrayList<Protocol> p = (ArrayList<Protocol>) session.createQuery(String.format("from Protocols where EventId = %d",eventId)).list();
 		closeSession();
-		return p != null ? p.get(0).getProtocolURL() : "";
+		return p != null ? (p.size() != 0 ? p.get(0).getProtocolURL() : "") : "";
 	}
 	
 	//Event
@@ -42,13 +43,13 @@ public class DBManager {
 	{
 		startSession();
 		ArrayList<UserEvent> list = (ArrayList<UserEvent>)session.createQuery(String.format("from UserEvents where EventId = %d and Answer = 1", eventId)).list();
+		closeSession();
 		if(list == null)
 			return null;
 		ArrayList<User> users = new ArrayList<>();
 		list.forEach(ue -> {
 			users.add(ue.getUser());
 		});
-		closeSession();
 		return users;
 	}
 	
@@ -56,8 +57,8 @@ public class DBManager {
 	public LinkedList<EventData> getEventsList(int userId)
 	{
 		startSession();
-		
 		ArrayList<UserEvent> userEventList = (ArrayList<UserEvent>)session.createQuery(String.format("from UserEvents where UserId = %d and Answer = 1" , userId)).list();
+		closeSession();
 		ArrayList<UserData> usersDataList = new ArrayList<>();
 		userEventList.forEach(ue->{
 			usersDataList.add(getUserDataFromDBUserEntity(ue.getUser()));
@@ -67,7 +68,6 @@ public class DBManager {
 			events.add(getEventDataByEvent(ue.getEvent(),usersDataList));
 		});
 
-		closeSession();
 		return events;
 	}
 	
@@ -78,9 +78,9 @@ public class DBManager {
 				e.getDateCreated(),
 				udlist,
 				getRelatedEventProtocol(e.getId()),
-				((User)get(e.getId(),DBEntityType.User)).getEmail(),
+				e.getAdmin().getEmail(),
 				e.getDescription(),
-				e.getIsFinished()== 1 ? false :true) ;
+				e.getIsFinished()== 1 ? false :true);
 	}
 	
 	//User
