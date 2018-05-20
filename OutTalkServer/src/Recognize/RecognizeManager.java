@@ -4,7 +4,6 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.SequenceInputStream;
-import java.io.UnsupportedEncodingException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -19,7 +18,6 @@ import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.UnsupportedAudioFileException;
 
 import org.apache.http.NameValuePair;
-import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
@@ -98,11 +96,8 @@ public class RecognizeManager {
 			pl = BuildProtocol(list, usersList);
 			System.out.println(response.toString());
 
-		} catch (ClientProtocolException e) {
-			// TODO Auto-generated catch block
-			e.printStackTrace();
 		} catch (IOException e) {
-			// TODO Auto-generated catch block
+			System.out.println(e.getMessage());
 			e.printStackTrace();
 			return null;
 		}
@@ -118,7 +113,7 @@ public class RecognizeManager {
 		String currentUser = usersList.size() == 0 ? "" : usersList.get(0);
 		byte[] mergedBytes = null;
 		for (int i = 0; i < usersList.size(); i++) {
-			if (i + 1 == usersList.size() || !currentUser.equals(usersList.get(i)))// change user
+			if (i + 1 == usersList.size() || !currentUser.equals(usersList.get(i)))
 			{
 				mergedBytes = MergeWavList(wavBytes.subList(startIndex, endIndex + 1), "" + startIndex);
 				try {
@@ -129,7 +124,7 @@ public class RecognizeManager {
 					endIndex = i;
 					currentUser = usersList.get(i);
 				} catch (Exception e) {
-					// TODO Auto-generated catch block
+					System.out.println(e.getMessage());
 					e.printStackTrace();
 				}
 			} else
@@ -142,8 +137,8 @@ public class RecognizeManager {
 	private byte[] MergeWavList(List<String> wavBytes, String user1) {
 		AudioInputStream audio2;
 		byte[] mergedBytes = null;
-		File fileOut = new File("C:\\Users\\Gal\\Desktop\\" + user1 + ".wav");
 		try {
+			File fileOut = File.createTempFile("tempFile", "wav");
 			AudioInputStream audioBuild = AudioSystem
 					.getAudioInputStream(new ByteArrayInputStream(Base64.decodeBase64(wavBytes.get(0).getBytes())));
 			for (int i = 1; i < wavBytes.size(); i++) {
@@ -154,11 +149,11 @@ public class RecognizeManager {
 			}
 
 			AudioSystem.write(audioBuild, AudioFileFormat.Type.WAVE, fileOut);
-			Path path = Paths.get("C:\\Users\\Gal\\Desktop\\" + user1 + ".wav");
+			Path path = Paths.get(fileOut.getPath());
 			mergedBytes = Files.readAllBytes(path);
 
 		} catch (IOException | UnsupportedAudioFileException e) {
-			// TODO Auto-generated catch block
+			System.out.println(e.getMessage());
 			e.printStackTrace();
 		}
 		return mergedBytes;
