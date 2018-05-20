@@ -5,6 +5,7 @@ import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.util.ArrayList;
 import org.apache.commons.codec.binary.Base64;
@@ -58,11 +59,29 @@ public class WavSplitFixedTime {
 		// Write split wav file
 		this.list = new ArrayList<>();
 		for (int i = 0; i < loopTime; i++) {
-			String index = String.format("%03d", (i + 1));
-			String wavSplitPath = wavSplitDir + "/" + wavFileNamePre + "-split" + index + ".wav";
-			File wavSplit = new File(wavSplitPath);
 			int startBytes = slotBytes * i;
-			list.add(writeWavSplitToString(wavSplit, startBytes, slotBytes));
+			list.add(writeWavSplitToString(startBytes, slotBytes));
+		}
+
+	}
+	
+	public WavSplitFixedTime(byte[] wavByte, float slotSec) {
+
+		// Read wav file to audio input stream and bytes array.
+		readWavBytes(wavByte);
+
+		// Calcurate bytes of the slot from sec.
+		float bytesPerSec = format.getFrameRate() * format.getFrameSize();
+		int slotBytes = (int) (bytesPerSec * slotSec);
+
+		// Calcurate how many time we repeat to write splitted wav files.
+		int loopTime = (int) (readBytes / slotBytes) + 1;
+
+		// Write split wav file
+		this.list = new ArrayList<>();
+		for (int i = 0; i < loopTime; i++) {
+			int startBytes = slotBytes * i;
+			list.add(writeWavSplitToString(startBytes, slotBytes));
 		}
 
 	}
@@ -85,13 +104,28 @@ public class WavSplitFixedTime {
 		}
 	}
 
-	public String writeWavSplitToString(File wavFile, int startBytes, int slotBytes) {
+	public void readWavBytes(byte[] wavBytes) {
+		try {			
+			InputStream fileIn = new ByteArrayInputStream(wavBytes);
+			audioIn = AudioSystem.getAudioInputStream(fileIn);
+			format = audioIn.getFormat();
+			buf = new byte[audioIn.available()];
+			audioIn.read(buf, 0, buf.length);
+			frameSize = format.getFrameSize();
+			frameLength = audioIn.getFrameLength();
+			readBytes = frameSize * frameLength;
+
+		}  catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
+	
+	public String writeWavSplitToString(int startBytes, int slotBytes) {
 		try {
 			InputStream byteIn = new BufferedInputStream(new ByteArrayInputStream(buf, startBytes, slotBytes));
 			AudioInputStream ais = new AudioInputStream(byteIn, format, byteIn.available());
 			ByteArrayOutputStream out = new ByteArrayOutputStream();
 			AudioSystem.write(ais, AudioFileFormat.Type.WAVE, out);
-
 			byte[] audioBytes = out.toByteArray();
 			String splittedWav = Base64.encodeBase64String(audioBytes);
 			return splittedWav;

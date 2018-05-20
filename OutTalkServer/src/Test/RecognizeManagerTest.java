@@ -1,5 +1,9 @@
 package Test;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -17,7 +21,12 @@ public class RecognizeManagerTest {
 		//rm.SendWavToRecognize("C:\\Users\\Gal\\Desktop\\wavTest\\fix.wav","10","SentToRecognize");
 		
 		//get the wav file 
-		WavSplitFixedTime ws = new WavSplitFixedTime("C:\\Users\\Gal\\Desktop\\wavTest\\fix.wav", 2);
+		Path fileLocation = Paths.get("C:\\Users\\Gal\\Desktop\\fix.wav");
+		byte[] data;
+		try {
+			data = Files.readAllBytes(fileLocation);
+		
+		WavSplitFixedTime ws = new WavSplitFixedTime(data, 2);
 		List<String> wavBytesList = ws.getList();
 
 		//get the users of the record from sisso
@@ -27,6 +36,10 @@ public class RecognizeManagerTest {
 		//algo
 		ArrayList<ProtocolLine> pl = rm.BuildProtocol(wavBytesList, usersList);
 		System.out.println("finish");
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
 	}
 
 }

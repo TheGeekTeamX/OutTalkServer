@@ -4,6 +4,7 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.IOException;
 import java.io.SequenceInputStream;
+import java.io.UnsupportedEncodingException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -33,61 +34,87 @@ import ResponsesEntitys.ProtocolLine;
 import org.apache.commons.codec.binary.Base64;
 
 public class RecognizeManager {
-	
+
+	public boolean onEventOpen(String URL, String eventId, String label, List<String> users) {
+
+		ArrayList<NameValuePair> postParameters;
+		HttpClient httpclient = HttpClientBuilder.create().build();
+		postParameters = new ArrayList<NameValuePair>();
+		postParameters.add(new BasicNameValuePair("meet_id", eventId));
+		postParameters.add(new BasicNameValuePair("label", label));
+		HttpPost post = new HttpPost(URL); // "http://193.106.55.106:5000/predict"
+
+		try {
+			post.setEntity(new UrlEncodedFormEntity(postParameters, "UTF-8"));
+			ResponseHandler<String> responseHandler = new BasicResponseHandler();
+			String responseBody;
+			responseBody = httpclient.execute(post, responseHandler);
+			JSONObject response = new JSONObject(responseBody);
+			System.out.println("response: " + response);
+
+			return true;
+		} catch (IOException e) {
+			e.printStackTrace();
+		}
+
+		return false;
+
+	}
+
 	// Send the Wav to recognize service
-	public 	ArrayList<ProtocolLine> SendWavToRecognize(String wavPath,String eventId,String action) {
+	public ArrayList<ProtocolLine> SendWavToRecognize(String URL, byte[] wavByte, String eventId, String label) {
 		ArrayList<ProtocolLine> pl = new ArrayList<>();
+
 		// Divide wav file to chunks of 2 seconds
-		WavSplitFixedTime ws = new WavSplitFixedTime(wavPath, 2);
+		WavSplitFixedTime ws = new WavSplitFixedTime(wavByte, 2);
 		List<String> list = ws.getList();
 
 		ArrayList<NameValuePair> postParameters;
 		HttpClient httpclient = HttpClientBuilder.create().build();
 		postParameters = new ArrayList<NameValuePair>();
 		postParameters.add(new BasicNameValuePair("meet_id", eventId));
-		postParameters.add(new BasicNameValuePair("label", "sahar"));
-		HttpPost post = new HttpPost("http://193.106.55.106:5000/predict");
-		
+		postParameters.add(new BasicNameValuePair("label", label));
+		HttpPost post = new HttpPost(URL); // "http://193.106.55.106:5000/predict"
 
-			StringBuilder sb = new StringBuilder();
-			for (String str : list) {
-				sb.append(str);
-				sb.append(",");
-			}
-			sb.deleteCharAt(sb.length() - 1);
-			postParameters.add(new BasicNameValuePair("audio_parts", sb.toString()));
-			
-			try {
-				post.setEntity(new UrlEncodedFormEntity(postParameters, "UTF-8"));
+		StringBuilder sb = new StringBuilder();
+		for (String str : list) {
+			sb.append(str);
+			sb.append(",");
+		}
+		sb.deleteCharAt(sb.length() - 1);
+		postParameters.add(new BasicNameValuePair("audio_parts", sb.toString()));
 
-				ResponseHandler<String> responseHandler = new BasicResponseHandler();
-				String responseBody;
-				responseBody = httpclient.execute(post, responseHandler);
-				JSONObject response = new JSONObject(responseBody);
+		try {
+			post.setEntity(new UrlEncodedFormEntity(postParameters, "UTF-8"));
 
-				String users = response.getJSONArray("result").toString();
-				List<String> usersList = new LinkedList<String>(Arrays.asList(users.split(",")));
+			ResponseHandler<String> responseHandler = new BasicResponseHandler();
+			String responseBody;
+			responseBody = httpclient.execute(post, responseHandler);
+			JSONObject response = new JSONObject(responseBody);
 
-				 pl = BuildProtocol(list, usersList);
-				System.out.println(response.toString());
-				
+			String users = response.getJSONArray("result").toString();
+			List<String> usersList = new LinkedList<String>(Arrays.asList(users.split(",")));
 
-			} catch (ClientProtocolException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-			} catch (IOException e) {
-				// TODO Auto-generated catch block
-				e.printStackTrace();
-				return null;
-			}
-			return pl;
+			pl = BuildProtocol(list, usersList);
+			System.out.println(response.toString());
+
+		} catch (ClientProtocolException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		} catch (IOException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+			return null;
+		}
+		return pl;
 	}
 
-	// Get the list of user in the record from recognize service and compare with the regular record
+	// Get the list of user in the record from recognize service and compare with
+	// the regular record
 	public ArrayList<ProtocolLine> BuildProtocol(List<String> wavBytes, List<String> usersList) {
 		int startIndex = 0, endIndex = 0;
 		ArrayList<ProtocolLine> pl = new ArrayList<>();
-		
+
 		String currentUser = usersList.size() == 0 ? "" : usersList.get(0);
 		byte[] mergedBytes = null;
 		for (int i = 0; i < usersList.size(); i++) {
@@ -108,8 +135,8 @@ public class RecognizeManager {
 			} else
 				endIndex = i;
 		}
-		return 	pl;
-		
+		return pl;
+
 	}
 
 	private byte[] MergeWavList(List<String> wavBytes, String user1) {
