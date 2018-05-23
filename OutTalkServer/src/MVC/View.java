@@ -3,8 +3,9 @@ package MVC;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.Observable;
 
-public class View {
+public class View extends Observable {
 	private static final DateFormat sdf = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss");
 	private Date date;
 	

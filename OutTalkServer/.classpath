@@ -1,7 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
-	<classpathentry excluding="resources/|resources/ProfilePictures/|resources/Protocols/|resources/Records/|resources/ProfilePictures/" kind="src" path="src"/>
-	<classpathentry excluding="ProfilePictures/|Protocols/|Records/|ProfilePictures/" kind="src" path="src/resources"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.8">
 		<attributes>
 			<attribute name="maven.pomderived" value="true"/>
@@ -14,5 +12,12 @@
 	</classpathentry>
 	<classpathentry kind="lib" path="lib/Utils/sqljdbc42.jar"/>
 	<classpathentry kind="lib" path="lib/Utils/Utils.jar"/>
+	<classpathentry including="**/*.java" kind="src" output="target/classes" path="src">
+		<attributes>
+			<attribute name="optional" value="true"/>
+			<attribute name="maven.pomderived" value="true"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="src" path="src/resources"/>
 	<classpathentry kind="output" path="target/classes"/>
 </classpath>

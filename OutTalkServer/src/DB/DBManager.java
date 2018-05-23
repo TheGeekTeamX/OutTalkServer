@@ -146,10 +146,10 @@ public class DBManager {
 	}
 	
 	@SuppressWarnings("unchecked")
-	public LinkedList<UserEvent> getUserEventByEventId(int eventId)
+	public ArrayList<UserEvent> getUserEventByEventId(int eventId)
 	{
 		startSession();
-		LinkedList<UserEvent> usersEvent = (LinkedList<UserEvent>)session.createQuery(String.format("from UserEvents where EventId = %d and Answer = 1", eventId)).list();
+		ArrayList<UserEvent> usersEvent = (ArrayList<UserEvent>)session.createQuery(String.format("from UserEvents where EventId = %d and Answer = 1", eventId)).list();
 		closeSession();
 		return usersEvent;
 	}
