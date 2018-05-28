@@ -2,7 +2,6 @@ package MVC;
 
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Observable;
 import java.util.Observer;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -10,23 +9,16 @@ import java.util.concurrent.TimeUnit;
 import com.corundumstudio.socketio.*;
 import com.corundumstudio.socketio.listener.DataListener;
 import com.corundumstudio.socketio.listener.DisconnectListener;
-import com.google.gson.Gson;
 
 import DB.*;
 import Enums.*;
-import Notifications.EventCloseNotificationData;
-import Notifications.EventInvitationNotificationData;
-import Notifications.UserJoinEventNotification;
-import Notifications.UserLeaveEventNotification;
 import Requests.*;
 import Responses.*;
 import ResponsesEntitys.*;
-import Tools.BytesHandler;
 
 public class Controller implements Observer {
 	private String url;
 	private int port;
-	private Controller instance;
 	private Model model;
 	private View view;
 	private HashMap<String, SocketIOClient> connections;
@@ -40,7 +32,7 @@ public class Controller implements Observer {
 		// TODO Auto-generated method stub
 		RequestData reqData = socketHandler.getObjectFromString(data, RequestData.class);
 		User user = model.getUser(reqData.getUserEmail());
-		if(user == null)
+		if(reqData.getType() != RequestType.CreateUserRequest && user == null)
 			return new ErrorResponseData(ErrorType.UserIsNotExist);
 		switch (reqData.getType()) {
 		case AddFriendRequest:
@@ -48,7 +40,7 @@ public class Controller implements Observer {
 		case ChangePasswordRequest:
 			return model.ChangePassword(socketHandler.getObjectFromString(data, ChangePasswordRequestData.class),user);// checked
 		case CreateUserRequest:
-			return model.CreateUser(socketHandler.getObjectFromString(data, CreateUserRequestData.class),user);
+			return model.CreateUser(socketHandler.getObjectFromString(data, CreateUserRequestData.class));
 		case EditContactsListRequest:
 			return model.EditContactsList(socketHandler.getObjectFromString(data, EditContactsListRequestData.class),user);
 		case EditUserRequest:
@@ -75,6 +67,8 @@ public class Controller implements Observer {
 			return model.DeclineEvent(socketHandler.getObjectFromString(data, DeclineEventRequestData.class),user);
 		case LeaveEvent:
 			return model.LeaveEvent(socketHandler.getObjectFromString(data, LeaveEventRequestData.class),user);
+		case DataSetRequest:
+			return model.DataSet(socketHandler.getObjectFromString(data, DataSetRequestData.class), user);
 		default:
 			System.out.println("default");
 			break;
@@ -109,11 +103,10 @@ public class Controller implements Observer {
 	}
 
 	// C'tor
-	public Controller(Model model, View view, String ip, int port, String pathToResources) {
+	public Controller(Model model, View view, String ip, int port) {
 		super();
 		this.url = ip;
 		this.port = port;
-		instance = this;
 		this.connections = new HashMap<>();
 		this.socketHandler = new SocketHandler(connections);
 		this.model = model;
@@ -121,7 +114,6 @@ public class Controller implements Observer {
 		this.view = view;
 		model.addObserver(this);
 		view.addObserver(this);
-		model.setPathToResources(pathToResources);
 		executionPool = new PausableThreadPoolExecutor(10, 20, 2, TimeUnit.MINUTES, new ArrayBlockingQueue<>(5));
 	}
 	
@@ -157,14 +149,15 @@ public class Controller implements Observer {
 					public void run() {
 						// TODO Auto-generated method stub
 						LoginRequestData lrd = socketHandler.getObjectFromString(data, LoginRequestData.class);
-						if (getClientEmailBySocket(client) != null && model.isEmailsEquals(getClientEmailBySocket(client), lrd.getUserEmail()))
+						Boolean res = Model.isEmailsEquals(getClientEmailBySocket(client), lrd.getUserEmail());
+						if (getClientEmailBySocket(client) != null && res)
 						{
 							socketHandler.sendToClient(client, "Response",
 									new ErrorResponseData(ErrorType.ConnectionIsAlreadyEstablished));
 							return;
 						} else {
 							if (getClientEmailBySocket(client) != null
-									&& !model.isEmailsEquals(getClientEmailBySocket(client), lrd.getUserEmail()))
+									&& !res)
 								connections.remove(getClientEmailBySocket(client));
 							User user = model.getDbManager().getUser(lrd.getUserEmail());
 							if (user == null) {
@@ -179,7 +172,7 @@ public class Controller implements Observer {
 											new ErrorResponseData(ErrorType.TechnicalError));
 									return;
 								}
-								if (model.isEmailsEquals(lrd.getUserEmail(), credential.getUser().getEmail())
+								if (Model.isEmailsEquals(lrd.getUserEmail(), credential.getUser().getEmail())
 										&& lrd.getPassword().equals(credential.getCredntial())) {
 									socketHandler.sendToClient(client, "Response",
 											new LoginResponseData(user.getId(), user.getFirstName(), user.getLastName(),
@@ -199,12 +192,32 @@ public class Controller implements Observer {
 
 			}
 		});
+		serverSock.addEventListener("Register", String.class, new DataListener<String>() {
+
+			@Override
+			public void onData(SocketIOClient client, String data, AckRequest ackRequest){
+				// TODO Auto-generated method stub
+				CreateUserRequestData reqData = socketHandler.getObjectFromString(data, CreateUserRequestData.class);
+				String email = reqData.getUserEmail();
+				executionPool.execute(new Runnable() {
+					
+					@Override
+					public void run() {
+						// TODO Auto-generated method stub
+						ResponseData rd = execute(data);
+						if(rd.getType() == ResponseType.Boolean)
+							connections.put(email, client);
+						socketHandler.sendToClient(client, "Response", rd);
+					}
+				});
+			}
+		});
 		serverSock.addEventListener("Request", String.class, new DataListener<String>() {
 			@Override
 			public void onData(SocketIOClient client, String data, AckRequest ackRequest) {
 				// TODO Auto-generated method stub
 				RequestData rd = socketHandler.getObjectFromString(data, RequestData.class);
-				if (model.isEmailsEquals(getClientEmailBySocket(client), rd.getUserEmail())) {
+				if (Model.isEmailsEquals(getClientEmailBySocket(client), rd.getUserEmail())) {
 					executionPool.execute(new Runnable() {
 
 						@Override

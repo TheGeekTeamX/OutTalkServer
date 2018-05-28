@@ -14,7 +14,6 @@ import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
 import org.hibernate.cfg.Configuration;
 
-import DB.*;
 import Enums.*;
 import ResponsesEntitys.EventData;
 import ResponsesEntitys.UserData;
@@ -58,17 +57,20 @@ public class DBManager {
 	{
 		startSession();
 		ArrayList<UserEvent> userEventList = (ArrayList<UserEvent>)session.createQuery(String.format("from UserEvents where UserId = %d and Answer = 1" , userId)).list();
-		closeSession();
-		ArrayList<UserData> usersDataList = new ArrayList<>();
+		LinkedList<EventData> eventsList = new LinkedList<>();
 		userEventList.forEach(ue->{
-			usersDataList.add(getUserDataFromDBUserEntity(ue.getUser()));
+			ArrayList<User> usersList = getPariticpants(ue.getEvent().getId());
+			ArrayList<UserData> usersDataList = new ArrayList<>();
+			usersList.forEach(u->{
+				usersDataList.add(getUserDataFromDBUserEntity(u));
+			});
+			eventsList.add(getEventDataByEvent(ue.getEvent(), usersDataList));
 		});
-		LinkedList<EventData> events = new LinkedList<>();
-		userEventList.forEach(ue -> {
-			events.add(getEventDataByEvent(ue.getEvent(),usersDataList));
-		});
+		
+		closeSession();
 
-		return events;
+
+		return eventsList;
 	}
 	
 	public EventData getEventDataByEvent(Event e, List<UserData> udlist)

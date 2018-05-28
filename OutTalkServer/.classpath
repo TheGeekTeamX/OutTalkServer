@@ -12,12 +12,7 @@
 	</classpathentry>
 	<classpathentry kind="lib" path="lib/Utils/sqljdbc42.jar"/>
 	<classpathentry kind="lib" path="lib/Utils/Utils.jar"/>
-	<classpathentry including="**/*.java" kind="src" output="target/classes" path="src">
-		<attributes>
-			<attribute name="optional" value="true"/>
-			<attribute name="maven.pomderived" value="true"/>
-		</attributes>
-	</classpathentry>
-	<classpathentry kind="src" path="src/resources"/>
+	<classpathentry kind="src" path="src"/>
+	<classpathentry kind="src" path="ResourcesDirectory"/>
 	<classpathentry kind="output" path="target/classes"/>
 </classpath>

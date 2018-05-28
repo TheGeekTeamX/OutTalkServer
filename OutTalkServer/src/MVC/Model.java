@@ -3,50 +3,15 @@ package MVC;
 import java.sql.Date;
 import java.util.ArrayList;
 import java.util.Calendar;
-import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Observable;
-
-import com.corundumstudio.socketio.SocketIOClient;
-import com.corundumstudio.socketio.listener.ConnectListener;
-
-import DB.Contact;
-import DB.Credential;
-import DB.DBManager;
-import DB.Event;
-import DB.ProfilePicture;
-import DB.User;
-import DB.UserEvent;
+import DB.*;
 import Enums.DBEntityType;
 import Enums.ErrorType;
-import Requests.AddFriendRequestData;
-import Requests.ChangePasswordRequestData;
-import Requests.CloseEventRequestData;
-import Requests.ConfirmEventRequestData;
-import Requests.ContactsListRequestData;
-import Requests.CreateEventRequestData;
-import Requests.CreateUserRequestData;
-import Requests.DeclineEventRequestData;
-import Requests.EditContactsListRequestData;
-import Requests.EditUserRequestData;
-import Requests.EventProtocolRequestData;
-import Requests.EventsListRequestData;
-import Requests.IsUserExistRequestData;
-import Requests.LeaveEventRequestData;
-import Requests.LoginRequestData;
-import Requests.ProfilePictureRequestData;
-import Requests.RequestData;
-import Requests.UpdateProfilePictureRequestData;
-import Responses.AddFriendResponseData;
-import Responses.BooleanResponseData;
-import Responses.ContactsListResponseData;
-import Responses.ErrorResponseData;
-import Responses.EventProtocolResponseData;
-import Responses.EventsListResponseData;
-import Responses.IsUserExistResponseData;
-import Responses.ProfilePictureResponseData;
-import Responses.ResponseData;
+import Recognize.RecognizeManager;
+import Requests.*;
+import Responses.*;
 import ResponsesEntitys.EventData;
 import ResponsesEntitys.ProtocolLine;
 import ResponsesEntitys.UserData;
@@ -54,7 +19,6 @@ import Tools.BytesHandler;
 
 public class Model extends Observable {
 	private static Model instance;
-	private String pathToResources;
 	private DBManager dbManager;
 	private SocketHandler socketHandler;
 	
@@ -78,12 +42,7 @@ public class Model extends Observable {
 		return dbManager.getUser(email);
 	}
 	
-	public String getPathToResources() {
-		return pathToResources;
-	}
-	public void setPathToResources(String pathToResources) {
-		this.pathToResources = pathToResources;
-	}
+
 	public static Model getInstance()
 	{
 		if(instance == null)
@@ -115,7 +74,7 @@ public class Model extends Observable {
 		if (protocolName == null || protocolName.equals(""))
 			return new ErrorResponseData(ErrorType.ProtocolIsNotExist);
 		ArrayList<ProtocolLine> protocol = BytesHandler
-				.fromTextFileToProtocol(pathToResources + "\\Protocols\\" + protocolName);
+				.fromTextFileToProtocol("/Protocols/"+protocolName);
 		return protocol != null ? new EventProtocolResponseData(reqData.getEventID(), protocol)
 				: new ErrorResponseData(ErrorType.TechnicalError);
 	}
@@ -129,7 +88,6 @@ public class Model extends Observable {
 			if (u != null)
 				participants.add(u);
 		});
-		participants.add(user);
 		// create Event
 		Event e = new Event(user, reqData.getTitle(), new Date(Calendar.getInstance().getTime().getTime()).toString(),
 				0, 0, reqData.getDescription());
@@ -174,21 +132,23 @@ public class Model extends Observable {
 			return new ErrorResponseData(ErrorType.UserHasNoProfilePicture);
 		else
 		{
-			System.out.println(pathToResources + "\\ProfilePictures\\" + user.getId() + ".jpg");
-			byte[] arr = BytesHandler.FromImageToByteArray(pathToResources + "ProfilePictures\\" + user.getId() + ".jpg", "jpg");
+			byte[] arr = BytesHandler.FromImageToByteArray("/Images/"+user.getId()+".jpg","jpg");
 			ProfilePictureResponseData rd = new ProfilePictureResponseData(arr);
 			return rd;
 		}
 	}
 	
-	public ResponseData CreateUser(CreateUserRequestData reqData,User user) {
+	public ResponseData CreateUser(CreateUserRequestData reqData) {
 		notifyObservers(reqData.getUserEmail() + " Send CreateUserRequest");
 		User u = new User(reqData.getUserEmail(), reqData.getFirstName(), reqData.getLastName(),reqData.getPhoneNumber(), reqData.getCountry());
 		u.setId(dbManager.addToDataBase(u));
 		if (u.getId() < 0)
 			return new ErrorResponseData(ErrorType.TechnicalError);
-		addProfilePicture(reqData);// TODO
-		dbManager.addToDataBase(new Credential(u, reqData.getCredential()));
+		byte[] bytes = reqData.getImageBytes();
+		if(bytes != null)
+			BytesHandler.SaveByteArrayInDestinationAsImage(bytes, "jpg", "/Images/"+u.getId()+".jpg");
+		if(dbManager.addToDataBase(new Credential(u, reqData.getCredential())) < 0)
+			return new ErrorResponseData(ErrorType.TechnicalError);
 		return new BooleanResponseData(true);
 	}
 
@@ -299,7 +259,7 @@ public class Model extends Observable {
 				UserData ud = dbManager.getUserDataFromDBUserEntity(user);
 				if(list.contains(ud))
 					list.remove(ud);
-				socketHandler.sendUserEventNotification(e,list,user,false);
+				socketHandler.sendUserEventNotification(dbManager.getEventDataByEvent(e, list),list,ud,false);
 			}
 		}
 		return new BooleanResponseData(true);
@@ -318,7 +278,7 @@ public class Model extends Observable {
 		UserData ud = dbManager.getUserDataFromDBUserEntity(user);
 		if(list.contains(ud))
 			list.remove(ud);
-		socketHandler.sendUserEventNotification(ue.getEvent(),list,user,true);
+		socketHandler.sendUserEventNotification(dbManager.getEventDataByEvent(ue.getEvent(), list),list,ud,true);
 		return new BooleanResponseData(true);
 	}
 	
@@ -340,13 +300,21 @@ public class Model extends Observable {
 			if (dbManager.editInDataBase(event.getId(), DBEntityType.Event, event))
 				return new ErrorResponseData(ErrorType.TechnicalError);
 			else {
-				// Get Byte array from req and send to GoogleService-TODO
-				ArrayList<User> l = dbManager.getPariticpants(event.getId());
 				LinkedList<UserData> list = getParticipantsUserData(event);
 				UserData ud = dbManager.getUserDataFromDBUserEntity(user);
 				if(list.contains(ud))
 					list.remove(ud);
-				socketHandler.sendEventCloseNotificationToUsers(event,list);
+				socketHandler.sendEventCloseNotificationToUsers(dbManager.getEventDataByEvent(event, list),list);
+				byte[] bytes = reqData.getRecordsBytes();
+				RecognizeManager rm = new RecognizeManager();
+				LinkedList<String> usersEmailsString = new LinkedList<>();
+				LinkedList<String> bytesString = new LinkedList<>();
+				list.forEach(l -> {
+					usersEmailsString.add(l.getEmail());
+				});
+				for(int i=0;i<bytes.length;i++)
+					bytesString.add(""+bytes[i]);
+				rm.BuildProtocol(bytesString, usersEmailsString);
 				return new BooleanResponseData(true);
 			}
 		} else
@@ -357,32 +325,20 @@ public class Model extends Observable {
 		return mail1.toLowerCase().equals(mail2.toLowerCase());
 	}
 
-	//TODO
-	
-	
-	private void addProfilePicture(RequestData reqData)// TODO
-	{
-
-	}
-
 	public ResponseData UpdateProfilePicture(UpdateProfilePictureRequestData reqData,User user) {
+		byte[] bytes = reqData.getProfilePictureBytes();
+		if(bytes == null)
+			return new ErrorResponseData(ErrorType.TechnicalError);
+		if(BytesHandler.SaveByteArrayInDestinationAsImage(bytes, "jpg", "/Images/"+user.getId()+".jpg"))
+			return new BooleanResponseData(true);
+		return new ErrorResponseData(ErrorType.TechnicalError);
+		
+	}
+	
+	public ResponseData DataSet(DataSetRequestData reqData,User user)
+	{
+		
 		return null;
-		/*view.printToConsole(reqData.getUserEmail() + " Send UpdateProfilePictureRequest");
-		User user = getUserFromDB(reqData);
-		if (user == null)
-			return new ErrorResponseData(ErrorType.UserIsNotExist);
-		ProfilePicture pp = model.getDbManager().getUserProfilePicture(user.getId());
-		String url = "" + user.getId() + ".jpg";
-		if (pp == null)// Need to add to DB
-		{
-			pp = new ProfilePicture(user, url);
-			model.getDbManager().addToDataBase(pp);
-		}
-		byte[] byteArr = Base64.getDecoder().decode(reqData.getProfilePictureBytes());
-
-		return BytesHandler.SaveByteArrayInDestinationAsImage(byteArr, "jpg",
-				pathToResources + "\\ProfilePictures\\" + url) ? new BooleanResponseData(true)
-						: new ErrorResponseData(ErrorType.TechnicalError);*/
 	}
 
 }

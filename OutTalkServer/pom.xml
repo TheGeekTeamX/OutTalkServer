@@ -6,17 +6,14 @@
 	<artifactId>OutTalkServer</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<build>
-		<sourceDirectory>src</sourceDirectory>
+		<!--  <sourceDirectory>src</sourceDirectory>-->
 		<resources>
-			<resource>
+			<!-- <resource>
 				<directory>src</directory>
-				<excludes>
-					<exclude>*/.java</exclude>
-				</excludes>
 			</resource>
 			<resource>
 				<directory>resources</directory>
-			</resource>
+			</resource>-->
 		</resources>
 		<plugins>
 			<plugin>

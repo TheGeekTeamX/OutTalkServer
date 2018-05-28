@@ -1,18 +1,10 @@
 package MVC;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
-
 import com.corundumstudio.socketio.SocketIOClient;
 import com.google.gson.Gson;
-
-import DB.Event;
-import DB.User;
-import Notifications.EventCloseNotificationData;
-import Notifications.EventInvitationNotificationData;
-import Notifications.UserJoinEventNotification;
-import Notifications.UserLeaveEventNotification;
+import Notifications.*;
 import ResponsesEntitys.EventData;
 import ResponsesEntitys.UserData;
 
@@ -53,22 +45,22 @@ public class SocketHandler {
 		});
 	}
 
-	public void sendEventCloseNotificationToUsers(Event e, List<UserData> participants) {
+	public void sendEventCloseNotificationToUsers(EventData eventData, List<UserData> participants) {
 		participants.forEach(p -> {
 			SocketIOClient sock = connections.get(p.getEmail());
 			if (sock != null) {
-				sendToClient(sock, "Notification", new EventCloseNotificationData(e.getId()));
+				sendToClient(sock, "Notification", new EventCloseNotificationData(eventData));
 			}
 		});
 	}
 
-	public void sendUserEventNotification(Event event,List<UserData> list, User user, Boolean isJoin) {
+	public void sendUserEventNotification(EventData eventData,List<UserData> list, UserData userData, Boolean isJoin) {
 		list.forEach(u -> {
 			SocketIOClient sock = connections.get(u.getEmail());
 			if (sock != null) {
 				sendToClient(sock, "Notification",
-						isJoin ? new UserJoinEventNotification(event.getId(), user.getId())
-								: new UserLeaveEventNotification(event.getId(), user.getId()));
+						isJoin ? new UserJoinEventNotification(eventData, userData)
+								: new UserLeaveEventNotification(eventData, userData));
 			}
 		});
 	}
