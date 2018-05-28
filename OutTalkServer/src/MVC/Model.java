@@ -21,7 +21,7 @@ public class Model extends Observable {
 	private static Model instance;
 	private DBManager dbManager;
 	private SocketHandler socketHandler;
-	
+	private RecognizeManager recognizeManager;
 	
 	
 	public SocketHandler getSocketHandler() {
@@ -64,6 +64,7 @@ public class Model extends Observable {
 		super();
 		// TODO Auto-generated constructor stub
 		this.dbManager = dbm;
+		recognizeManager = new RecognizeManager();
 	}
 	
 
@@ -322,7 +323,8 @@ public class Model extends Observable {
 	}
 
 	public static boolean isEmailsEquals(String mail1, String mail2) {
-		return mail1.toLowerCase().equals(mail2.toLowerCase());
+		
+		return (mail1 == null || mail2 == null) ? false : mail1.toLowerCase().equals(mail2.toLowerCase());
 	}
 
 	public ResponseData UpdateProfilePicture(UpdateProfilePictureRequestData reqData,User user) {
